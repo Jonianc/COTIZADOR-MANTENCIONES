@@ -12,6 +12,10 @@ Genera cotizaciones PDF con el formato Agrocampo desde un endpoint REST.
 
 Este plugin añade un endpoint REST que entrega una cotización en PDF usando el formato de la plantilla Agrocampo.
 
+También incluye un formulario frontend mediante el shortcode:
+
+[agrocampo_cotizador_form]
+
 Endpoint:
 
 - URL: /wp-json/agrocampo-cotizador/v1/pdf
@@ -46,6 +50,10 @@ POST:
 1. Sube el ZIP desde Plugins > Añadir nuevo > Subir plugin.
 2. Activa el plugin.
 3. Visita /wp-json/agrocampo-cotizador/v1/pdf
+
+== Shortcode ==
+
+Inserta el shortcode [agrocampo_cotizador_form] en una página para mostrar el formulario de generación de PDF.
 
 == Changelog ==
 

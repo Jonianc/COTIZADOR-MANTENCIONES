@@ -17,6 +17,8 @@ final class Agrocampo_Cotizador_PDF
     public function __construct()
     {
         add_action('rest_api_init', [$this, 'register_routes']);
+        add_action('wp_enqueue_scripts', [$this, 'register_assets']);
+        add_shortcode('agrocampo_cotizador_form', [$this, 'render_form']);
     }
 
     public function register_routes(): void
@@ -26,6 +28,125 @@ final class Agrocampo_Cotizador_PDF
             'callback' => [$this, 'handle_pdf_request'],
             'permission_callback' => '__return_true',
         ]);
+    }
+
+    public function register_assets(): void
+    {
+        $base = plugin_dir_url(__FILE__);
+        wp_register_style(
+            'agrocampo-cotizador-form',
+            $base . 'assets/form.css',
+            [],
+            '1.0.0'
+        );
+
+        wp_register_script(
+            'agrocampo-cotizador-form',
+            $base . 'assets/form.js',
+            [],
+            '1.0.0',
+            true
+        );
+
+        wp_localize_script('agrocampo-cotizador-form', 'agrocampoCotizadorPdf', [
+            'restUrl' => rest_url(self::REST_NAMESPACE . '/pdf'),
+        ]);
+    }
+
+    public function render_form(): string
+    {
+        wp_enqueue_style('agrocampo-cotizador-form');
+        wp_enqueue_script('agrocampo-cotizador-form');
+
+        $defaults = $this->default_data();
+        $items_json = wp_json_encode($defaults['items'], JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
+
+        ob_start();
+        ?>
+        <form class="agrocampo-cotizador-form">
+            <h3>Agrocampo – Cotizador PDF</h3>
+            <div class="agrocampo-cotizador-grid">
+                <div>
+                    <label for="quote_number">Cotización N°</label>
+                    <input id="quote_number" name="quote_number" type="text" value="<?php echo esc_attr($defaults['quote_number']); ?>">
+                </div>
+                <div>
+                    <label for="date">Fecha</label>
+                    <input id="date" name="date" type="text" value="<?php echo esc_attr($defaults['date']); ?>">
+                </div>
+                <div>
+                    <label for="client">Cliente</label>
+                    <input id="client" name="client" type="text" value="<?php echo esc_attr($defaults['client']); ?>">
+                </div>
+                <div>
+                    <label for="attention">Atención a</label>
+                    <input id="attention" name="attention" type="text" value="<?php echo esc_attr($defaults['attention']); ?>">
+                </div>
+                <div>
+                    <label for="model">Modelo</label>
+                    <input id="model" name="model" type="text" value="<?php echo esc_attr($defaults['model']); ?>">
+                </div>
+                <div>
+                    <label for="rut">RUT</label>
+                    <input id="rut" name="rut" type="text" value="<?php echo esc_attr($defaults['rut']); ?>">
+                </div>
+                <div>
+                    <label for="phone">Fono</label>
+                    <input id="phone" name="phone" type="text" value="<?php echo esc_attr($defaults['phone']); ?>">
+                </div>
+                <div>
+                    <label for="email">E-mail</label>
+                    <input id="email" name="email" type="email" value="<?php echo esc_attr($defaults['email']); ?>">
+                </div>
+                <div>
+                    <label for="location">Ubicación</label>
+                    <input id="location" name="location" type="text" value="<?php echo esc_attr($defaults['location']); ?>">
+                </div>
+                <div>
+                    <label for="subtitle">Detalle principal</label>
+                    <input id="subtitle" name="subtitle" type="text" value="<?php echo esc_attr($defaults['subtitle']); ?>">
+                </div>
+                <div>
+                    <label for="contact_name">Contacto</label>
+                    <input id="contact_name" name="contact_name" type="text" value="<?php echo esc_attr($defaults['contact_name']); ?>">
+                </div>
+                <div>
+                    <label for="contact_title">Cargo</label>
+                    <input id="contact_title" name="contact_title" type="text" value="<?php echo esc_attr($defaults['contact_title']); ?>">
+                </div>
+                <div>
+                    <label for="contact_mobile">Móvil</label>
+                    <input id="contact_mobile" name="contact_mobile" type="text" value="<?php echo esc_attr($defaults['contact_mobile']); ?>">
+                </div>
+                <div>
+                    <label for="contact_phone">Teléfono</label>
+                    <input id="contact_phone" name="contact_phone" type="text" value="<?php echo esc_attr($defaults['contact_phone']); ?>">
+                </div>
+                <div>
+                    <label for="contact_email">Correo contacto</label>
+                    <input id="contact_email" name="contact_email" type="email" value="<?php echo esc_attr($defaults['contact_email']); ?>">
+                </div>
+            </div>
+            <div>
+                <label for="items">Ítems (JSON)</label>
+                <textarea id="items" name="items"><?php echo esc_textarea($items_json); ?></textarea>
+            </div>
+            <div>
+                <label for="notes">Observaciones</label>
+                <textarea id="notes" name="notes"><?php echo esc_textarea($defaults['notes']); ?></textarea>
+            </div>
+            <div class="agrocampo-cotizador-actions">
+                <label>
+                    <input type="checkbox" name="download" checked>
+                    Descargar PDF
+                </label>
+                <button type="submit">Generar PDF</button>
+                <span class="agrocampo-cotizador-status"></span>
+            </div>
+        </form>
+        <?php
+
+        return (string) ob_get_clean();
     }
 
     public function handle_pdf_request(WP_REST_Request $request): WP_REST_Response
