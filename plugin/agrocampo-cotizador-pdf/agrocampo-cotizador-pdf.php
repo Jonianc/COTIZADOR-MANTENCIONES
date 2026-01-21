@@ -133,8 +133,7 @@ class Agrocampo_Cotizador_PDF {
               <div class="top">
                 <img class="logo" src="<?php echo esc_url($logo_url); ?>" alt="Agrocampo">
                 <div>
-                  <h1>Cotizador PDF</h1>
-                  <div class="muted">Formulario standalone (sin theme). Genera PDF descargable.</div>
+                  <h1>Cotizador Mantenciones PDF</h1>
                 </div>
               </div>
 
