@@ -182,6 +182,7 @@ class ACPDF_PDF {
     }
 
     public static function output_pdf($payload) {
+        $settings = ACPDF_Settings::get();
         // Reserve quote number at generation time
         $quote_no = self::reserve_quote_no($payload['date_iso']);
         $title = trim(($payload['model'] ? $payload['model'].' ' : '') . 'MANTENCION ' . $payload['maint_hours'] . ' HORAS');
@@ -195,9 +196,20 @@ class ACPDF_PDF {
 
         // Logo
         $logo = ACPDF_DIR . 'assets/agrocampo-logo.png';
+        $logo_id = absint($settings['logo_id'] ?? 0);
+        if ($logo_id) {
+            $custom_logo = get_attached_file($logo_id);
+            if ($custom_logo && is_readable($custom_logo)) {
+                $logo = $custom_logo;
+            }
+        }
+        $logo_width = floatval($settings['logo_width_mm'] ?? 45);
+        if ($logo_width <= 0) {
+            $logo_width = 45;
+        }
         if (is_readable($logo)) {
             // keep aspect by specifying width only
-            $pdf->Image($logo, 12, 10, 55);
+            $pdf->Image($logo, 12, 10, $logo_width);
         }
 
         $leftX = 14;
@@ -261,24 +273,24 @@ class ACPDF_PDF {
 
         $col = [
             'n' => 8,
-	            'code' => 24,
-	            'detail' => 72,
+            'code' => 24,
+            'detail' => 70,
             'unit_price' => 22,
             'unit' => 10,
             'discount' => 14,
             'qty' => 16,
-	            'total' => 20,
+            'total' => 22,
         ];
 
         $pdf->SetX($leftX);
         $pdf->Cell($col['n'], 7, self::to_pdf_text('N°'), 1, 0, 'C', true);
-        $pdf->Cell($col['code'], 7, self::to_pdf_text('Codigo'), 1, 0, 'C', true);
+        $pdf->Cell($col['code'], 7, self::to_pdf_text('Código'), 1, 0, 'C', true);
         $pdf->Cell($col['detail'], 7, self::to_pdf_text('Detalle'), 1, 0, 'C', true);
         $pdf->Cell($col['unit_price'], 7, self::to_pdf_text('Valor Neto'), 1, 0, 'C', true);
         $pdf->Cell($col['unit'], 7, self::to_pdf_text('Un.'), 1, 0, 'C', true);
         $pdf->Cell($col['discount'], 7, self::to_pdf_text('Descto'), 1, 0, 'C', true);
         $pdf->Cell($col['qty'], 7, self::to_pdf_text('Cantidad'), 1, 0, 'C', true);
-        $pdf->Cell($col['total'], 7, self::to_pdf_text('Valor Neto Total'), 1, 1, 'C', true);
+        $pdf->Cell($col['total'], 7, self::to_pdf_text('V. Total'), 1, 1, 'C', true);
 
         $pdf->SetFont('Times','',9);
 

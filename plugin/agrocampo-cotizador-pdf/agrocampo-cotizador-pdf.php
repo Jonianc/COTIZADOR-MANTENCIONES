@@ -24,6 +24,7 @@ class Agrocampo_Cotizador_PDF {
         add_action('template_redirect', [$this, 'handle_routes']);
         add_action('admin_menu', [$this, 'admin_menu']);
         add_action('admin_init', [$this, 'admin_init']);
+        add_action('admin_enqueue_scripts', [$this, 'admin_assets']);
         add_action('wp_enqueue_scripts', [$this, 'register_assets']);
     }
 
@@ -47,6 +48,13 @@ class Agrocampo_Cotizador_PDF {
 
     public function admin_init() {
         ACPDF_Settings::register();
+    }
+
+    public function admin_assets($hook) {
+        if ($hook !== 'settings_page_acpdf-settings') {
+            return;
+        }
+        wp_enqueue_media();
     }
 
     private function render_head($title='Agrocampo – Cotizador PDF') {
@@ -113,6 +121,12 @@ class Agrocampo_Cotizador_PDF {
         if ($route === 'form') {
             $settings = ACPDF_Settings::get();
             $logo_url = ACPDF_URL . 'assets/agrocampo-logo.png';
+            if (!empty($settings['logo_id'])) {
+                $custom_logo = wp_get_attachment_url(absint($settings['logo_id']));
+                if ($custom_logo) {
+                    $logo_url = $custom_logo;
+                }
+            }
             $this->render_head('Agrocampo – Cotizador PDF');
             ?>
             <div class="card">
@@ -135,11 +149,6 @@ class Agrocampo_Cotizador_PDF {
                   <div class="col-3">
                     <label>Fecha</label>
                     <input type="date" name="date_iso" id="acpdf-date" value="<?php echo esc_attr(date_i18n('Y-m-d')); ?>" />
-                  </div>
-                  <div class="col-3">
-                    <label>Cotización N°</label>
-                    <input name="quote_no" id="acpdf-quote" value="" readonly />
-                    <div class="muted small">Se autogenera y se incrementa al generar el PDF.</div>
                   </div>
                   <div class="col-3">
                     <label>RUT</label>
@@ -209,7 +218,7 @@ class Agrocampo_Cotizador_PDF {
                           <th style="width:70px">Un.</th>
                           <th style="width:80px">Descto %</th>
                           <th style="width:90px">Cantidad</th>
-                          <th style="width:140px">Valor Neto Total</th>
+                          <th style="width:120px">V. Total</th>
                           <th style="width:60px"></th>
                         </tr>
                       </thead>
@@ -249,8 +258,6 @@ class Agrocampo_Cotizador_PDF {
                 const $hours = document.getElementById('acpdf-hours');
                 const $model = document.getElementById('acpdf-model');
                 const $title = document.getElementById('acpdf-title');
-                const $date = document.getElementById('acpdf-date');
-                const $quote = document.getElementById('acpdf-quote');
 
                 function fillHours(){
                   const list = hours[$set.value] || hours.A;
@@ -263,13 +270,6 @@ class Agrocampo_Cotizador_PDF {
                   const h = ($hours.value||'').trim();
                   const t = (m ? m + ' ' : '') + 'MANTENCION ' + h + ' HORAS';
                   $title.value = t.trim();
-                }
-
-                async function fetchNext(){
-                  const q = new URLSearchParams({date: $date.value || ''});
-                  const res = await fetch('<?php echo esc_js(home_url('/agrocampo-cotizador/next')); ?>?' + q.toString(), {credentials:'same-origin'});
-                  const j = await res.json();
-                  if (j && j.next) $quote.value = j.next;
                 }
 
                 const tbody = document.querySelector('#acpdf-items tbody');
@@ -338,11 +338,8 @@ class Agrocampo_Cotizador_PDF {
                 $set.addEventListener('change', ()=>{fillHours();});
                 $hours.addEventListener('change', updateTitle);
                 $model.addEventListener('input', updateTitle);
-                $date.addEventListener('change', fetchNext);
-
                 fillHours();
                 addRow({n:1});
-                fetchNext();
               })();
             </script>
             <?php
