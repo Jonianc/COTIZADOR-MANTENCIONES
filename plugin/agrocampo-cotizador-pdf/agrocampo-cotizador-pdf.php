@@ -24,6 +24,7 @@ class Agrocampo_Cotizador_PDF {
         add_action('template_redirect', [$this, 'handle_routes']);
         add_action('admin_menu', [$this, 'admin_menu']);
         add_action('admin_init', [$this, 'admin_init']);
+        add_action('admin_enqueue_scripts', [$this, 'admin_assets']);
         add_action('wp_enqueue_scripts', [$this, 'register_assets']);
     }
 
@@ -43,10 +44,18 @@ class Agrocampo_Cotizador_PDF {
 
     public function admin_menu() {
         add_options_page('Cotizador PDF', 'Cotizador PDF', 'manage_options', 'acpdf-settings', ['ACPDF_Settings', 'render_page']);
+        add_submenu_page('options-general.php', 'Gestor de Cotizaciones', 'Gestor de Cotizaciones', 'manage_options', 'acpdf-quotes', [$this, 'render_quotes_page']);
     }
 
     public function admin_init() {
         ACPDF_Settings::register();
+    }
+
+    public function admin_assets($hook) {
+        if ($hook !== 'settings_page_acpdf-settings') {
+            return;
+        }
+        wp_enqueue_media();
     }
 
     private function render_head($title='Agrocampo – Cotizador PDF') {
@@ -106,6 +115,106 @@ class Agrocampo_Cotizador_PDF {
 </html><?php
     }
 
+    public function render_quotes_page() {
+        if (!current_user_can('manage_options')) {
+            return;
+        }
+        if (isset($_GET['view'])) {
+            $index = absint($_GET['view']);
+            $log = ACPDF_PDF::get_quote_log();
+            if (!isset($log[$index])) {
+                wp_die('Cotización no encontrada.');
+            }
+            $nonce = isset($_GET['_wpnonce']) ? sanitize_text_field(wp_unslash($_GET['_wpnonce'])) : '';
+            if (!wp_verify_nonce($nonce, 'acpdf_view_quote_' . $index)) {
+                wp_die('Acceso no autorizado.');
+            }
+            ACPDF_PDF::output_pdf_from_log($log[$index]);
+            exit;
+        }
+        $hours_filter = isset($_GET['maint_hours']) ? sanitize_text_field(wp_unslash($_GET['maint_hours'])) : '';
+        $hours_filter = preg_replace('/[^0-9]/', '', $hours_filter);
+        $log = ACPDF_PDF::get_quote_log();
+        $hours_options = [100, 400, 800, 1200, 500, 1000, 1500];
+        sort($hours_options);
+        ?>
+        <div class="wrap">
+          <h1>Gestor de Cotizaciones</h1>
+          <form method="get" style="margin:12px 0;">
+            <input type="hidden" name="page" value="acpdf-quotes">
+            <label for="acpdf-hours-filter" style="margin-right:8px;">Filtro por horas</label>
+            <select name="maint_hours" id="acpdf-hours-filter">
+              <option value="">Todas</option>
+              <?php foreach ($hours_options as $opt) : ?>
+                <option value="<?php echo esc_attr($opt); ?>" <?php selected($hours_filter, (string)$opt); ?>><?php echo esc_html($opt); ?></option>
+              <?php endforeach; ?>
+            </select>
+            <?php submit_button('Filtrar', 'secondary', '', false); ?>
+          </form>
+
+          <table class="widefat striped">
+            <thead>
+              <tr>
+                <th>Fecha</th>
+                <th>Cotización N°</th>
+                <th>Modelo</th>
+                <th>Cliente</th>
+                <th>Horas</th>
+                <th>Repuestos</th>
+                <th>Neto</th>
+                <th>IVA</th>
+                <th>Total</th>
+                <th>PDF</th>
+              </tr>
+            </thead>
+            <tbody>
+              <?php
+              $has_rows = false;
+              foreach (array_reverse($log, true) as $index => $entry) {
+                  $hours = isset($entry['maint_hours']) ? (string)$entry['maint_hours'] : '';
+                  if ($hours_filter !== '' && $hours_filter !== $hours) {
+                      continue;
+                  }
+                  $has_rows = true;
+                  ?>
+                  <tr>
+                    <td><?php echo esc_html($entry['date_iso'] ?? ''); ?></td>
+                    <td><?php echo esc_html($entry['quote_no'] ?? ''); ?></td>
+                    <td><?php echo esc_html($entry['model'] ?? ''); ?></td>
+                    <td><?php echo esc_html($entry['client'] ?? ''); ?></td>
+                    <td><?php echo esc_html($entry['maint_hours'] ?? ''); ?></td>
+                    <td><?php echo esc_html($entry['parts_type'] ?? ''); ?></td>
+                    <td><?php echo esc_html(number_format(floatval($entry['neto'] ?? 0), 0, ',', '.')); ?></td>
+                    <td><?php echo esc_html(number_format(floatval($entry['iva'] ?? 0), 0, ',', '.')); ?></td>
+                    <td><?php echo esc_html(number_format(floatval($entry['total'] ?? 0), 0, ',', '.')); ?></td>
+                    <td>
+                      <?php if (!empty($entry['payload']) && is_array($entry['payload'])) : ?>
+                        <?php
+                        $url = wp_nonce_url(
+                            admin_url('options-general.php?page=acpdf-quotes&view=' . $index),
+                            'acpdf_view_quote_' . $index
+                        );
+                        ?>
+                        <a class="button button-small" href="<?php echo esc_url($url); ?>">Ver PDF</a>
+                      <?php else : ?>
+                        <span class="dashicons dashicons-minus"></span>
+                      <?php endif; ?>
+                    </td>
+                  </tr>
+                  <?php
+              }
+              if (!$has_rows) :
+              ?>
+                <tr>
+                  <td colspan="10">No hay cotizaciones registradas para este filtro.</td>
+                </tr>
+              <?php endif; ?>
+            </tbody>
+          </table>
+        </div>
+        <?php
+    }
+
     public function handle_routes() {
         $route = get_query_var('acpdf_route');
         if (!$route) return;
@@ -113,14 +222,19 @@ class Agrocampo_Cotizador_PDF {
         if ($route === 'form') {
             $settings = ACPDF_Settings::get();
             $logo_url = ACPDF_URL . 'assets/agrocampo-logo.png';
+            if (!empty($settings['logo_id'])) {
+                $custom_logo = wp_get_attachment_url(absint($settings['logo_id']));
+                if ($custom_logo) {
+                    $logo_url = $custom_logo;
+                }
+            }
             $this->render_head('Agrocampo – Cotizador PDF');
             ?>
             <div class="card">
               <div class="top">
                 <img class="logo" src="<?php echo esc_url($logo_url); ?>" alt="Agrocampo">
                 <div>
-                  <h1>Cotizador PDF</h1>
-                  <div class="muted">Formulario standalone (sin theme). Genera PDF descargable.</div>
+                  <h1>Cotizador Mantenciones PDF</h1>
                 </div>
               </div>
 
@@ -135,11 +249,6 @@ class Agrocampo_Cotizador_PDF {
                   <div class="col-3">
                     <label>Fecha</label>
                     <input type="date" name="date_iso" id="acpdf-date" value="<?php echo esc_attr(date_i18n('Y-m-d')); ?>" />
-                  </div>
-                  <div class="col-3">
-                    <label>Cotización N°</label>
-                    <input name="quote_no" id="acpdf-quote" value="" readonly />
-                    <div class="muted small">Se autogenera y se incrementa al generar el PDF.</div>
                   </div>
                   <div class="col-3">
                     <label>RUT</label>
@@ -209,7 +318,7 @@ class Agrocampo_Cotizador_PDF {
                           <th style="width:70px">Un.</th>
                           <th style="width:80px">Descto %</th>
                           <th style="width:90px">Cantidad</th>
-                          <th style="width:140px">Valor Neto Total</th>
+                          <th style="width:120px">V. Total</th>
                           <th style="width:60px"></th>
                         </tr>
                       </thead>
@@ -249,8 +358,6 @@ class Agrocampo_Cotizador_PDF {
                 const $hours = document.getElementById('acpdf-hours');
                 const $model = document.getElementById('acpdf-model');
                 const $title = document.getElementById('acpdf-title');
-                const $date = document.getElementById('acpdf-date');
-                const $quote = document.getElementById('acpdf-quote');
 
                 function fillHours(){
                   const list = hours[$set.value] || hours.A;
@@ -263,13 +370,6 @@ class Agrocampo_Cotizador_PDF {
                   const h = ($hours.value||'').trim();
                   const t = (m ? m + ' ' : '') + 'MANTENCION ' + h + ' HORAS';
                   $title.value = t.trim();
-                }
-
-                async function fetchNext(){
-                  const q = new URLSearchParams({date: $date.value || ''});
-                  const res = await fetch('<?php echo esc_js(home_url('/agrocampo-cotizador/next')); ?>?' + q.toString(), {credentials:'same-origin'});
-                  const j = await res.json();
-                  if (j && j.next) $quote.value = j.next;
                 }
 
                 const tbody = document.querySelector('#acpdf-items tbody');
@@ -338,11 +438,8 @@ class Agrocampo_Cotizador_PDF {
                 $set.addEventListener('change', ()=>{fillHours();});
                 $hours.addEventListener('change', updateTitle);
                 $model.addEventListener('input', updateTitle);
-                $date.addEventListener('change', fetchNext);
-
                 fillHours();
                 addRow({n:1});
-                fetchNext();
               })();
             </script>
             <?php
