@@ -182,8 +182,22 @@ class ACPDF_PDF {
     }
 
     public static function output_pdf($payload) {
+        $settings = ACPDF_Settings::get();
         // Reserve quote number at generation time
         $quote_no = self::reserve_quote_no($payload['date_iso']);
+        self::render_pdf($payload, $quote_no, $settings, false, true);
+    }
+
+    public static function output_pdf_from_log($entry, $inline = true) {
+        if (!is_array($entry) || empty($entry['payload']) || empty($entry['quote_no'])) {
+            status_header(404);
+            exit;
+        }
+        $settings = ACPDF_Settings::get();
+        self::render_pdf($entry['payload'], $entry['quote_no'], $settings, $inline, false);
+    }
+
+    private static function render_pdf($payload, $quote_no, $settings, $inline, $should_log) {
         $title = trim(($payload['model'] ? $payload['model'].' ' : '') . 'MANTENCION ' . $payload['maint_hours'] . ' HORAS');
 
         if (function_exists("ini_set")) { @ini_set("display_errors", "0"); }
@@ -195,9 +209,20 @@ class ACPDF_PDF {
 
         // Logo
         $logo = ACPDF_DIR . 'assets/agrocampo-logo.png';
+        $logo_id = absint($settings['logo_id'] ?? 0);
+        if ($logo_id) {
+            $custom_logo = get_attached_file($logo_id);
+            if ($custom_logo && is_readable($custom_logo)) {
+                $logo = $custom_logo;
+            }
+        }
+        $logo_width = floatval($settings['logo_width_mm'] ?? 45);
+        if ($logo_width <= 0) {
+            $logo_width = 45;
+        }
         if (is_readable($logo)) {
             // keep aspect by specifying width only
-            $pdf->Image($logo, 12, 10, 55);
+            $pdf->Image($logo, 12, 10, $logo_width);
         }
 
         $leftX = 14;
@@ -261,24 +286,24 @@ class ACPDF_PDF {
 
         $col = [
             'n' => 8,
-	            'code' => 24,
-	            'detail' => 72,
+            'code' => 24,
+            'detail' => 70,
             'unit_price' => 22,
             'unit' => 10,
             'discount' => 14,
             'qty' => 16,
-	            'total' => 20,
+            'total' => 22,
         ];
 
         $pdf->SetX($leftX);
         $pdf->Cell($col['n'], 7, self::to_pdf_text('N°'), 1, 0, 'C', true);
-        $pdf->Cell($col['code'], 7, self::to_pdf_text('Codigo'), 1, 0, 'C', true);
+        $pdf->Cell($col['code'], 7, self::to_pdf_text('Código'), 1, 0, 'C', true);
         $pdf->Cell($col['detail'], 7, self::to_pdf_text('Detalle'), 1, 0, 'C', true);
         $pdf->Cell($col['unit_price'], 7, self::to_pdf_text('Valor Neto'), 1, 0, 'C', true);
         $pdf->Cell($col['unit'], 7, self::to_pdf_text('Un.'), 1, 0, 'C', true);
         $pdf->Cell($col['discount'], 7, self::to_pdf_text('Descto'), 1, 0, 'C', true);
         $pdf->Cell($col['qty'], 7, self::to_pdf_text('Cantidad'), 1, 0, 'C', true);
-        $pdf->Cell($col['total'], 7, self::to_pdf_text('Valor Neto Total'), 1, 1, 'C', true);
+        $pdf->Cell($col['total'], 7, self::to_pdf_text('V. Total'), 1, 1, 'C', true);
 
         $pdf->SetFont('Times','',9);
 
@@ -338,6 +363,9 @@ class ACPDF_PDF {
         $pdf->Ln(4);
         $iva = $neto * (floatval($payload['iva_percent'])/100.0);
         $total = $neto + $iva;
+        if ($should_log) {
+            self::log_quote($payload, $quote_no, $neto, $iva, $total);
+        }
 
         $boxX = 130;
         $boxW = 65;
@@ -387,13 +415,45 @@ class ACPDF_PDF {
         if (function_exists('ini_set')) { @ini_set('zlib.output_compression', '0'); }
         nocache_headers();
         header('Content-Type: application/pdf');
-        header('Content-Disposition: attachment; filename="'.$filename.'"');
+        header('Content-Disposition: '.($inline ? 'inline' : 'attachment').'; filename="'.$filename.'"');
         header('Content-Length: '.strlen($bytes));
         header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
         header('Pragma: no-cache');
         header('X-Content-Type-Options: nosniff');
         echo $bytes;
         exit;
+    }
+
+    public static function get_quote_log() {
+        $log = get_option('acpdf_quote_log', []);
+        if (!is_array($log)) {
+            return [];
+        }
+        return $log;
+    }
+
+    private static function log_quote($payload, $quote_no, $neto, $iva, $total) {
+        $log = get_option('acpdf_quote_log', []);
+        if (!is_array($log)) {
+            $log = [];
+        }
+        $log[] = [
+            'created_at' => current_time('mysql'),
+            'quote_no' => $quote_no,
+            'date_iso' => $payload['date_iso'],
+            'maint_hours' => $payload['maint_hours'],
+            'model' => $payload['model'],
+            'client' => $payload['client'],
+            'parts_type' => $payload['parts_type'],
+            'payload' => $payload,
+            'neto' => round(floatval($neto)),
+            'iva' => round(floatval($iva)),
+            'total' => round(floatval($total)),
+        ];
+        if (count($log) > 500) {
+            $log = array_slice($log, -500);
+        }
+        update_option('acpdf_quote_log', $log, false);
     }
 
     private static function count_lines($pdf, $w, $txt) {
