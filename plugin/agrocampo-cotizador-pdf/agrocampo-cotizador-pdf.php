@@ -59,7 +59,7 @@ class Agrocampo_Cotizador_PDF {
         wp_enqueue_media();
     }
 
-    private function render_head($title='Agrocampo – Cotizador PDF') {
+    private function render_head($title='Agrocampo – Cotizador PDF', $menu_links = []) {
         nocache_headers();
         header('Content-Type: text/html; charset=utf-8');
         ?><!doctype html>
@@ -102,11 +102,25 @@ class Agrocampo_Cotizador_PDF {
     .totals{margin-left:auto;min-width:280px}
     .totals .line{display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px dashed #e3e6eb}
     .totals .line:last-child{border-bottom:0}
+    .acpdf-menu{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px}
+    .acpdf-menu a{display:inline-flex;align-items:center;gap:6px;padding:8px 12px;border-radius:999px;background:#eef0f3;color:#111;text-decoration:none;font-size:13px}
+    .acpdf-menu a:hover{background:#e3e6eb}
     @media (max-width:900px){.col-3,.col-4,.col-6,.col-8{grid-column:span 12}.logo{width:180px}}
   </style>
 </head>
 <body>
 <div class="wrap">
+<?php if (!empty($menu_links)) : ?>
+  <nav class="acpdf-menu" aria-label="Navegación">
+    <?php foreach ($menu_links as $link) :
+        if (empty($link['url']) || empty($link['label'])) {
+            continue;
+        }
+        ?>
+      <a href="<?php echo esc_url($link['url']); ?>"><?php echo esc_html($link['label']); ?></a>
+    <?php endforeach; ?>
+  </nav>
+<?php endif; ?>
 <?php
     }
 
@@ -253,7 +267,11 @@ class Agrocampo_Cotizador_PDF {
                     $prefill = $log[$index]['payload'] ?? null;
                 }
             }
-            $this->render_head('Agrocampo – Cotizador PDF');
+            $this->render_head('Agrocampo – Cotizador PDF', [
+                ['label' => 'Formulario', 'url' => home_url('/agrocampo-cotizador')],
+                ['label' => 'Gestor', 'url' => home_url('/agrocampo-cotizador/gestor')],
+                ['label' => 'Ajustes', 'url' => admin_url('options-general.php?page=acpdf-settings')],
+            ]);
             ?>
             <div class="card">
               <div class="top">
@@ -548,7 +566,11 @@ class Agrocampo_Cotizador_PDF {
                 exit;
             }
 
-            $this->render_head('Gestor de Cotizaciones');
+            $this->render_head('Gestor de Cotizaciones', [
+                ['label' => 'Formulario', 'url' => home_url('/agrocampo-cotizador')],
+                ['label' => 'Gestor', 'url' => home_url('/agrocampo-cotizador/gestor')],
+                ['label' => 'Ajustes', 'url' => admin_url('options-general.php?page=acpdf-settings')],
+            ]);
             ?>
             <div class="card">
               <div class="top">
