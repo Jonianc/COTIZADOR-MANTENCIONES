@@ -140,6 +140,7 @@ class Agrocampo_Cotizador_PDF {
         ?>
         <div class="wrap">
           <h1>Gestor de Cotizaciones</h1>
+          <p class="description">Los PDFs se abren en una nueva pestaña para facilitar volver al listado.</p>
           <form method="get" style="margin:12px 0;">
             <input type="hidden" name="page" value="acpdf-quotes">
             <label for="acpdf-hours-filter" style="margin-right:8px;">Filtro por horas</label>
@@ -195,7 +196,7 @@ class Agrocampo_Cotizador_PDF {
                             'acpdf_view_quote_' . $index
                         );
                         ?>
-                        <a class="button button-small" href="<?php echo esc_url($url); ?>">Ver PDF</a>
+                        <a class="button button-small" href="<?php echo esc_url($url); ?>" target="_blank" rel="noopener noreferrer">Ver PDF</a>
                       <?php else : ?>
                         <span class="dashicons dashicons-minus"></span>
                       <?php endif; ?>
