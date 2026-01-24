@@ -166,6 +166,7 @@ class Agrocampo_Cotizador_PDF {
                 <th>IVA</th>
                 <th>Total</th>
                 <th>PDF</th>
+                <th>Gestionar</th>
               </tr>
             </thead>
             <tbody>
@@ -201,13 +202,26 @@ class Agrocampo_Cotizador_PDF {
                         <span class="dashicons dashicons-minus"></span>
                       <?php endif; ?>
                     </td>
+                    <td>
+                      <?php if (!empty($entry['payload']) && is_array($entry['payload'])) : ?>
+                        <?php
+                        $edit_url = wp_nonce_url(
+                            home_url('/agrocampo-cotizador?prefill=' . $index),
+                            'acpdf_prefill_' . $index
+                        );
+                        ?>
+                        <a class="button button-small" href="<?php echo esc_url($edit_url); ?>" target="_blank" rel="noopener noreferrer">Abrir formulario</a>
+                      <?php else : ?>
+                        <span class="dashicons dashicons-minus"></span>
+                      <?php endif; ?>
+                    </td>
                   </tr>
                   <?php
               }
               if (!$has_rows) :
               ?>
                 <tr>
-                  <td colspan="10">No hay cotizaciones registradas para este filtro.</td>
+                  <td colspan="11">No hay cotizaciones registradas para este filtro.</td>
                 </tr>
               <?php endif; ?>
             </tbody>
@@ -223,10 +237,19 @@ class Agrocampo_Cotizador_PDF {
         if ($route === 'form') {
             $settings = ACPDF_Settings::get();
             $logo_url = ACPDF_URL . 'assets/agrocampo-logo.png';
+            $prefill = null;
             if (!empty($settings['logo_id'])) {
                 $custom_logo = wp_get_attachment_url(absint($settings['logo_id']));
                 if ($custom_logo) {
                     $logo_url = $custom_logo;
+                }
+            }
+            if (isset($_GET['prefill'])) {
+                $index = absint($_GET['prefill']);
+                $nonce = isset($_GET['_wpnonce']) ? sanitize_text_field(wp_unslash($_GET['_wpnonce'])) : '';
+                $log = ACPDF_PDF::get_quote_log();
+                if (isset($log[$index]) && wp_verify_nonce($nonce, 'acpdf_prefill_' . $index) && current_user_can('manage_options')) {
+                    $prefill = $log[$index]['payload'] ?? null;
                 }
             }
             $this->render_head('Agrocampo – Cotizador PDF');
@@ -345,6 +368,7 @@ class Agrocampo_Cotizador_PDF {
             <script>
               (function(){
                 const IVA = <?php echo json_encode(floatval($settings['default_iva_percent'])); ?>;
+                const PREFILL = <?php echo wp_json_encode($prefill); ?>;
                 const fmt = (n)=>{
                   n = Math.round((Number(n)||0));
                   return '$' + n.toString().replace(/\B(?=(\d{3})+(?!\d))/g,'.');
@@ -425,6 +449,51 @@ class Agrocampo_Cotizador_PDF {
                   document.getElementById('acpdf-total').textContent = fmt(total);
                 }
 
+                function applyPrefill(data){
+                  if (!data || typeof data !== 'object') return;
+                  const setField = (name, value)=>{
+                    const el = document.querySelector(`[name="${name}"]`);
+                    if (el) el.value = value || '';
+                  };
+                  setField('city', data.city);
+                  setField('date_iso', data.date_iso);
+                  setField('rut', data.rut);
+                  setField('client', data.client);
+                  setField('phone', data.phone);
+                  setField('email', data.email);
+                  setField('model', data.model);
+                  setField('location', data.location);
+                  setField('parts_type', data.parts_type);
+                  setField('observations', data.observations);
+
+                  const hoursValue = String(data.maint_hours || '');
+                  $set.value = (hoursValue === '500' || hoursValue === '1000' || hoursValue === '1500') ? 'B' : 'A';
+                  fillHours();
+                  if ($hours) {
+                    $hours.value = hoursValue || $hours.value;
+                  }
+                  updateTitle();
+
+                  tbody.innerHTML = '';
+                  const items = Array.isArray(data.items) ? data.items : [];
+                  if (items.length) {
+                    items.forEach((item, idx)=>{
+                      addRow({
+                        n: item.n || (idx + 1),
+                        code: item.code || '',
+                        detail: item.detail || '',
+                        unit_price: item.unit_price || '',
+                        unit: item.unit || 'UN',
+                        discount: item.discount || '',
+                        qty: item.qty || ''
+                      });
+                    });
+                  } else {
+                    addRow({n:1});
+                  }
+                  calc();
+                }
+
                 document.getElementById('acpdf-add').addEventListener('click', ()=>addRow({}));
                 tbody.addEventListener('click', (e)=>{
                   if (e.target && e.target.classList.contains('acpdf-del')){
@@ -440,7 +509,11 @@ class Agrocampo_Cotizador_PDF {
                 $hours.addEventListener('change', updateTitle);
                 $model.addEventListener('input', updateTitle);
                 fillHours();
-                addRow({n:1});
+                if (PREFILL) {
+                  applyPrefill(PREFILL);
+                } else {
+                  addRow({n:1});
+                }
               })();
             </script>
             <?php
