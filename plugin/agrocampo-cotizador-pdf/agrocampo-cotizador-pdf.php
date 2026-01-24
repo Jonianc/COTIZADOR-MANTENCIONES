@@ -44,6 +44,7 @@ class Agrocampo_Cotizador_PDF {
 
     public function admin_menu() {
         add_options_page('Cotizador PDF', 'Cotizador PDF', 'manage_options', 'acpdf-settings', ['ACPDF_Settings', 'render_page']);
+        add_submenu_page('options-general.php', 'Gestor de Cotizaciones', 'Gestor de Cotizaciones', 'manage_options', 'acpdf-quotes', [$this, 'render_quotes_page']);
     }
 
     public function admin_init() {
@@ -112,6 +113,79 @@ class Agrocampo_Cotizador_PDF {
         ?></div>
 </body>
 </html><?php
+    }
+
+    public function render_quotes_page() {
+        if (!current_user_can('manage_options')) {
+            return;
+        }
+        $hours_filter = isset($_GET['maint_hours']) ? sanitize_text_field(wp_unslash($_GET['maint_hours'])) : '';
+        $hours_filter = preg_replace('/[^0-9]/', '', $hours_filter);
+        $log = ACPDF_PDF::get_quote_log();
+        $hours_options = [100, 400, 800, 1200, 500, 1000, 1500];
+        sort($hours_options);
+        ?>
+        <div class="wrap">
+          <h1>Gestor de Cotizaciones</h1>
+          <form method="get" style="margin:12px 0;">
+            <input type="hidden" name="page" value="acpdf-quotes">
+            <label for="acpdf-hours-filter" style="margin-right:8px;">Filtro por horas</label>
+            <select name="maint_hours" id="acpdf-hours-filter">
+              <option value="">Todas</option>
+              <?php foreach ($hours_options as $opt) : ?>
+                <option value="<?php echo esc_attr($opt); ?>" <?php selected($hours_filter, (string)$opt); ?>><?php echo esc_html($opt); ?></option>
+              <?php endforeach; ?>
+            </select>
+            <?php submit_button('Filtrar', 'secondary', '', false); ?>
+          </form>
+
+          <table class="widefat striped">
+            <thead>
+              <tr>
+                <th>Fecha</th>
+                <th>Cotización N°</th>
+                <th>Modelo</th>
+                <th>Cliente</th>
+                <th>Horas</th>
+                <th>Repuestos</th>
+                <th>Neto</th>
+                <th>IVA</th>
+                <th>Total</th>
+              </tr>
+            </thead>
+            <tbody>
+              <?php
+              $has_rows = false;
+              foreach (array_reverse($log) as $entry) {
+                  $hours = isset($entry['maint_hours']) ? (string)$entry['maint_hours'] : '';
+                  if ($hours_filter !== '' && $hours_filter !== $hours) {
+                      continue;
+                  }
+                  $has_rows = true;
+                  ?>
+                  <tr>
+                    <td><?php echo esc_html($entry['date_iso'] ?? ''); ?></td>
+                    <td><?php echo esc_html($entry['quote_no'] ?? ''); ?></td>
+                    <td><?php echo esc_html($entry['model'] ?? ''); ?></td>
+                    <td><?php echo esc_html($entry['client'] ?? ''); ?></td>
+                    <td><?php echo esc_html($entry['maint_hours'] ?? ''); ?></td>
+                    <td><?php echo esc_html($entry['parts_type'] ?? ''); ?></td>
+                    <td><?php echo esc_html(number_format(floatval($entry['neto'] ?? 0), 0, ',', '.')); ?></td>
+                    <td><?php echo esc_html(number_format(floatval($entry['iva'] ?? 0), 0, ',', '.')); ?></td>
+                    <td><?php echo esc_html(number_format(floatval($entry['total'] ?? 0), 0, ',', '.')); ?></td>
+                  </tr>
+                  <?php
+              }
+              if (!$has_rows) :
+              ?>
+                <tr>
+                  <td colspan="9">No hay cotizaciones registradas para este filtro.</td>
+                </tr>
+              <?php endif; ?>
+            </tbody>
+          </table>
+        </div>
+        <?php
     }
 
     public function handle_routes() {

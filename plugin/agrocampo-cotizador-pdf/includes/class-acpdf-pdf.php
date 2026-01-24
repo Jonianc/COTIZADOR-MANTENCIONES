@@ -350,6 +350,7 @@ class ACPDF_PDF {
         $pdf->Ln(4);
         $iva = $neto * (floatval($payload['iva_percent'])/100.0);
         $total = $neto + $iva;
+        self::log_quote($payload, $quote_no, $neto, $iva, $total);
 
         $boxX = 130;
         $boxW = 65;
@@ -406,6 +407,37 @@ class ACPDF_PDF {
         header('X-Content-Type-Options: nosniff');
         echo $bytes;
         exit;
+    }
+
+    public static function get_quote_log() {
+        $log = get_option('acpdf_quote_log', []);
+        if (!is_array($log)) {
+            return [];
+        }
+        return $log;
+    }
+
+    private static function log_quote($payload, $quote_no, $neto, $iva, $total) {
+        $log = get_option('acpdf_quote_log', []);
+        if (!is_array($log)) {
+            $log = [];
+        }
+        $log[] = [
+            'created_at' => current_time('mysql'),
+            'quote_no' => $quote_no,
+            'date_iso' => $payload['date_iso'],
+            'maint_hours' => $payload['maint_hours'],
+            'model' => $payload['model'],
+            'client' => $payload['client'],
+            'parts_type' => $payload['parts_type'],
+            'neto' => round(floatval($neto)),
+            'iva' => round(floatval($iva)),
+            'total' => round(floatval($total)),
+        ];
+        if (count($log) > 500) {
+            $log = array_slice($log, -500);
+        }
+        update_option('acpdf_quote_log', $log, false);
     }
 
     private static function count_lines($pdf, $w, $txt) {
