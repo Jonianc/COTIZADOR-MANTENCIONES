@@ -113,6 +113,7 @@ class ACPDF_Settings {
           </form>
           <hr>
           <p><strong>Frontend:</strong> <code><?php echo esc_html(home_url('/agrocampo-cotizador')); ?></code></p>
+          <p><strong>Gestor frontend:</strong> <code><?php echo esc_html(home_url('/agrocampo-cotizador/gestor')); ?></code></p>
         </div>
         <script>
           (function(){
