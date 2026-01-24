@@ -35,6 +35,7 @@ class Agrocampo_Cotizador_PDF {
     public function register_routes() {
         add_rewrite_rule('^agrocampo-cotizador/?$', 'index.php?acpdf_route=form', 'top');
         add_rewrite_rule('^agrocampo-cotizador/pdf/?$', 'index.php?acpdf_route=pdf', 'top');
+        add_rewrite_rule('^agrocampo-cotizador/gestor/?$', 'index.php?acpdf_route=gestor', 'top');
         add_rewrite_rule('^agrocampo-cotizador/next/?$', 'index.php?acpdf_route=next', 'top');
         add_filter('query_vars', function($vars){
             $vars[] = 'acpdf_route';
@@ -516,6 +517,129 @@ class Agrocampo_Cotizador_PDF {
                 }
               })();
             </script>
+            <?php
+            $this->render_foot();
+            exit;
+        }
+
+        if ($route === 'gestor') {
+            if (!current_user_can('manage_options')) {
+                status_header(403);
+                exit('Forbidden');
+            }
+            $hours_filter = isset($_GET['maint_hours']) ? sanitize_text_field(wp_unslash($_GET['maint_hours'])) : '';
+            $hours_filter = preg_replace('/[^0-9]/', '', $hours_filter);
+            $log = ACPDF_PDF::get_quote_log();
+            $hours_options = [100, 400, 800, 1200, 500, 1000, 1500];
+            sort($hours_options);
+
+            if (isset($_GET['view'])) {
+                $index = absint($_GET['view']);
+                if (!isset($log[$index])) {
+                    status_header(404);
+                    exit('Cotización no encontrada.');
+                }
+                $nonce = isset($_GET['_wpnonce']) ? sanitize_text_field(wp_unslash($_GET['_wpnonce'])) : '';
+                if (!wp_verify_nonce($nonce, 'acpdf_view_quote_' . $index)) {
+                    status_header(403);
+                    exit('Acceso no autorizado.');
+                }
+                ACPDF_PDF::output_pdf_from_log($log[$index]);
+                exit;
+            }
+
+            $this->render_head('Gestor de Cotizaciones');
+            ?>
+            <div class="card">
+              <div class="top">
+                <div>
+                  <h1>Gestor de Cotizaciones</h1>
+                  <div class="muted">Listado standalone para administración de cotizaciones.</div>
+                </div>
+              </div>
+
+              <form method="get" style="margin:12px 0;">
+                <input type="hidden" name="acpdf_route" value="gestor">
+                <label for="acpdf-hours-filter" style="margin-right:8px;">Filtro por horas</label>
+                <select name="maint_hours" id="acpdf-hours-filter">
+                  <option value="">Todas</option>
+                  <?php foreach ($hours_options as $opt) : ?>
+                    <option value="<?php echo esc_attr($opt); ?>" <?php selected($hours_filter, (string)$opt); ?>><?php echo esc_html($opt); ?></option>
+                  <?php endforeach; ?>
+                </select>
+                <button type="submit" class="btn btn-ghost">Filtrar</button>
+              </form>
+
+              <table>
+                <thead>
+                  <tr>
+                    <th>Fecha</th>
+                    <th>Cotización N°</th>
+                    <th>Modelo</th>
+                    <th>Cliente</th>
+                    <th>Horas</th>
+                    <th>Repuestos</th>
+                    <th>Neto</th>
+                    <th>IVA</th>
+                    <th>Total</th>
+                    <th>PDF</th>
+                    <th>Gestionar</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <?php
+                  $has_rows = false;
+                  foreach (array_reverse($log, true) as $index => $entry) {
+                      $hours = isset($entry['maint_hours']) ? (string)$entry['maint_hours'] : '';
+                      if ($hours_filter !== '' && $hours_filter !== $hours) {
+                          continue;
+                      }
+                      $has_rows = true;
+                      $pdf_url = wp_nonce_url(
+                          home_url('/agrocampo-cotizador/gestor?view=' . $index),
+                          'acpdf_view_quote_' . $index
+                      );
+                      $edit_url = wp_nonce_url(
+                          home_url('/agrocampo-cotizador?prefill=' . $index),
+                          'acpdf_prefill_' . $index
+                      );
+                      ?>
+                      <tr>
+                        <td><?php echo esc_html($entry['date_iso'] ?? ''); ?></td>
+                        <td><?php echo esc_html($entry['quote_no'] ?? ''); ?></td>
+                        <td><?php echo esc_html($entry['model'] ?? ''); ?></td>
+                        <td><?php echo esc_html($entry['client'] ?? ''); ?></td>
+                        <td><?php echo esc_html($entry['maint_hours'] ?? ''); ?></td>
+                        <td><?php echo esc_html($entry['parts_type'] ?? ''); ?></td>
+                        <td><?php echo esc_html(number_format(floatval($entry['neto'] ?? 0), 0, ',', '.')); ?></td>
+                        <td><?php echo esc_html(number_format(floatval($entry['iva'] ?? 0), 0, ',', '.')); ?></td>
+                        <td><?php echo esc_html(number_format(floatval($entry['total'] ?? 0), 0, ',', '.')); ?></td>
+                        <td>
+                          <?php if (!empty($entry['payload']) && is_array($entry['payload'])) : ?>
+                            <a class="btn btn-ghost" href="<?php echo esc_url($pdf_url); ?>" target="_blank" rel="noopener noreferrer">Ver PDF</a>
+                          <?php else : ?>
+                            <span class="muted">-</span>
+                          <?php endif; ?>
+                        </td>
+                        <td>
+                          <?php if (!empty($entry['payload']) && is_array($entry['payload'])) : ?>
+                            <a class="btn btn-ghost" href="<?php echo esc_url($edit_url); ?>" target="_blank" rel="noopener noreferrer">Abrir formulario</a>
+                          <?php else : ?>
+                            <span class="muted">-</span>
+                          <?php endif; ?>
+                        </td>
+                      </tr>
+                      <?php
+                  }
+                  if (!$has_rows) :
+                  ?>
+                    <tr>
+                      <td colspan="11">No hay cotizaciones registradas para este filtro.</td>
+                    </tr>
+                  <?php endif; ?>
+                </tbody>
+              </table>
+            </div>
             <?php
             $this->render_foot();
             exit;
