@@ -53,10 +53,13 @@ class Agrocampo_Cotizador_PDF {
     }
 
     public function admin_assets($hook) {
-        if ($hook !== 'settings_page_acpdf-settings') {
+        if ($hook === 'settings_page_acpdf-settings') {
+            wp_enqueue_media();
             return;
         }
-        wp_enqueue_media();
+        if ($hook === 'settings_page_acpdf-quotes') {
+            wp_enqueue_style('acpdf-admin-gestor', ACPDF_URL . 'assets/admin-gestor.css', [], ACPDF_VER);
+        }
     }
 
     private function render_head($title='Agrocampo – Cotizador PDF', $menu_links = []) {
@@ -149,100 +152,61 @@ class Agrocampo_Cotizador_PDF {
         }
         $hours_filter = isset($_GET['maint_hours']) ? sanitize_text_field(wp_unslash($_GET['maint_hours'])) : '';
         $hours_filter = preg_replace('/[^0-9]/', '', $hours_filter);
+        $order_by = isset($_GET['orderby']) ? sanitize_text_field(wp_unslash($_GET['orderby'])) : 'date';
+        $order = isset($_GET['order']) ? strtoupper(sanitize_text_field(wp_unslash($_GET['order']))) : 'DESC';
+        $order = ($order === 'ASC') ? 'ASC' : 'DESC';
+        $allowed_orderby = ['date', 'total', 'quote'];
+        if (!in_array($order_by, $allowed_orderby, true)) {
+            $order_by = 'date';
+        }
+
         $log = ACPDF_PDF::get_quote_log();
+        $filtered = [];
+        foreach ($log as $index => $entry) {
+            $hours = isset($entry['maint_hours']) ? (string)$entry['maint_hours'] : '';
+            if ($hours_filter !== '' && $hours_filter !== $hours) {
+                continue;
+            }
+            $filtered[$index] = $entry;
+        }
+
+        uasort($filtered, function($a, $b) use ($order_by, $order) {
+            $dir = ($order === 'ASC') ? 1 : -1;
+            if ($order_by === 'total') {
+                $aVal = floatval($a['total'] ?? 0);
+                $bVal = floatval($b['total'] ?? 0);
+                if ($aVal === $bVal) return 0;
+                return ($aVal < $bVal) ? -1 * $dir : 1 * $dir;
+            }
+            if ($order_by === 'quote') {
+                $aVal = (string)($a['quote_no'] ?? '');
+                $bVal = (string)($b['quote_no'] ?? '');
+                if ($aVal === $bVal) return 0;
+                return ($aVal < $bVal) ? -1 * $dir : 1 * $dir;
+            }
+            $aVal = (string)($a['date_iso'] ?? '');
+            $bVal = (string)($b['date_iso'] ?? '');
+            if ($aVal === $bVal) return 0;
+            return ($aVal < $bVal) ? -1 * $dir : 1 * $dir;
+        });
+
+        $per_page = 20;
+        $paged = max(1, absint($_GET['paged'] ?? 1));
+        $total_items = count($filtered);
+        $total_pages = max(1, (int)ceil($total_items / $per_page));
+        if ($paged > $total_pages) {
+            $paged = $total_pages;
+        }
+        $offset = ($paged - 1) * $per_page;
+        $rows = array_slice($filtered, $offset, $per_page, true);
         $hours_options = [100, 400, 800, 1200, 500, 1000, 1500];
         sort($hours_options);
-        ?>
-        <div class="wrap">
-          <h1>Gestor de Cotizaciones</h1>
-          <p class="description">Los PDFs se abren en una nueva pestaña para facilitar volver al listado.</p>
-          <form method="get" style="margin:12px 0;">
-            <input type="hidden" name="page" value="acpdf-quotes">
-            <label for="acpdf-hours-filter" style="margin-right:8px;">Filtro por horas</label>
-            <select name="maint_hours" id="acpdf-hours-filter">
-              <option value="">Todas</option>
-              <?php foreach ($hours_options as $opt) : ?>
-                <option value="<?php echo esc_attr($opt); ?>" <?php selected($hours_filter, (string)$opt); ?>><?php echo esc_html($opt); ?></option>
-              <?php endforeach; ?>
-            </select>
-            <?php submit_button('Filtrar', 'secondary', '', false); ?>
-          </form>
+        $base_url = admin_url('options-general.php?page=acpdf-quotes');
 
-          <table class="widefat striped">
-            <thead>
-              <tr>
-                <th>Fecha</th>
-                <th>Cotización N°</th>
-                <th>Modelo</th>
-                <th>Cliente</th>
-                <th>Horas</th>
-                <th>Repuestos</th>
-                <th>Neto</th>
-                <th>IVA</th>
-                <th>Total</th>
-                <th>PDF</th>
-                <th>Gestionar</th>
-              </tr>
-            </thead>
-            <tbody>
-              <?php
-              $has_rows = false;
-              foreach (array_reverse($log, true) as $index => $entry) {
-                  $hours = isset($entry['maint_hours']) ? (string)$entry['maint_hours'] : '';
-                  if ($hours_filter !== '' && $hours_filter !== $hours) {
-                      continue;
-                  }
-                  $has_rows = true;
-                  ?>
-                  <tr>
-                    <td><?php echo esc_html($entry['date_iso'] ?? ''); ?></td>
-                    <td><?php echo esc_html($entry['quote_no'] ?? ''); ?></td>
-                    <td><?php echo esc_html($entry['model'] ?? ''); ?></td>
-                    <td><?php echo esc_html($entry['client'] ?? ''); ?></td>
-                    <td><?php echo esc_html($entry['maint_hours'] ?? ''); ?></td>
-                    <td><?php echo esc_html($entry['parts_type'] ?? ''); ?></td>
-                    <td><?php echo esc_html(number_format(floatval($entry['neto'] ?? 0), 0, ',', '.')); ?></td>
-                    <td><?php echo esc_html(number_format(floatval($entry['iva'] ?? 0), 0, ',', '.')); ?></td>
-                    <td><?php echo esc_html(number_format(floatval($entry['total'] ?? 0), 0, ',', '.')); ?></td>
-                    <td>
-                      <?php if (!empty($entry['payload']) && is_array($entry['payload'])) : ?>
-                        <?php
-                        $url = wp_nonce_url(
-                            admin_url('options-general.php?page=acpdf-quotes&view=' . $index),
-                            'acpdf_view_quote_' . $index
-                        );
-                        ?>
-                        <a class="button button-small" href="<?php echo esc_url($url); ?>" target="_blank" rel="noopener noreferrer">Ver PDF</a>
-                      <?php else : ?>
-                        <span class="dashicons dashicons-minus"></span>
-                      <?php endif; ?>
-                    </td>
-                    <td>
-                      <?php if (!empty($entry['payload']) && is_array($entry['payload'])) : ?>
-                        <?php
-                        $edit_url = wp_nonce_url(
-                            home_url('/agrocampo-cotizador?prefill=' . $index),
-                            'acpdf_prefill_' . $index
-                        );
-                        ?>
-                        <a class="button button-small" href="<?php echo esc_url($edit_url); ?>" target="_blank" rel="noopener noreferrer">Abrir formulario</a>
-                      <?php else : ?>
-                        <span class="dashicons dashicons-minus"></span>
-                      <?php endif; ?>
-                    </td>
-                  </tr>
-                  <?php
-              }
-              if (!$has_rows) :
-              ?>
-                <tr>
-                  <td colspan="11">No hay cotizaciones registradas para este filtro.</td>
-                </tr>
-              <?php endif; ?>
-            </tbody>
-          </table>
-        </div>
-        <?php
+        $template = ACPDF_DIR . 'templates/admin-gestor.php';
+        if (file_exists($template)) {
+            include $template;
+        }
     }
 
     public function handle_routes() {

@@ -1,0 +1,16 @@
+.acpdf-admin-gestor .acpdf-filters {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  margin: 12px 0;
+}
+
+.acpdf-admin-gestor .acpdf-filters select {
+  min-width: 160px;
+}
+
+.acpdf-admin-gestor .acpdf-actions {
+  display: inline-flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
