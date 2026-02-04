@@ -332,6 +332,7 @@ return $d.' de '.$mm.' del '.$y;
         $pdf = new ACPDF_FPDF('P', 'mm', 'A4');
         $pdf->SetAutoPageBreak(true, 16);
         $pdf->AddPage();
+        $pageBottom = $pdf->GetPageHeight() - 16;
 
         // Logo
         $logo = ACPDF_DIR . 'assets/agrocampo-logo.png';
@@ -436,19 +437,17 @@ return $d.' de '.$mm.' del '.$y;
         $pdf->SetXY(0, 76);
         $pdf->Cell(210, 7, self::to_pdf_text($title), 0, 1, 'C');
 
-        // Table header
         $pdf->Ln(2);
-        $pdf->SetFont('Times','B',9);
-        $pdf->SetFillColor(230,230,230);
+        self::render_watermark($pdf, $payload);
 
         $col = [
-            'n' => 8,
-            'code' => 22,
-            'detail' => 74,
+            'n' => 7,
+            'code' => 21,
+            'detail' => 80,
             'unit_price' => 20,
-            'unit' => 10,
-            'discount' => 13,
-            'qty' => 15,
+            'unit' => 9,
+            'discount' => 12,
+            'qty' => 13,
             'total' => 22,
         ];
 
@@ -459,24 +458,28 @@ return $d.' de '.$mm.' del '.$y;
 
         $rowHHeader = 6.5;
         $rowLineH = 4.4;
-        $pdf->SetX($leftX);
-        $pdf->Cell($col['n'], $rowHHeader, self::to_pdf_text('N°'), 1, 0, 'C', true);
-        if ($show_codes) {
-            $pdf->Cell($col['code'], $rowHHeader, self::to_pdf_text('Código'), 1, 0, 'C', true);
-        }
-        $pdf->Cell($col['detail'], $rowHHeader, self::to_pdf_text('Detalle'), 1, 0, 'C', true);
-        $pdf->Cell($col['unit_price'], $rowHHeader, self::to_pdf_text('Valor Neto'), 1, 0, 'C', true);
-        $pdf->Cell($col['unit'], $rowHHeader, self::to_pdf_text('Un.'), 1, 0, 'C', true);
-        $pdf->Cell($col['discount'], $rowHHeader, self::to_pdf_text('Descto'), 1, 0, 'C', true);
-        $pdf->Cell($col['qty'], $rowHHeader, self::to_pdf_text('Cantidad'), 1, 0, 'C', true);
-        $pdf->Cell($col['total'], $rowHHeader, self::to_pdf_text('V. Total'), 1, 1, 'C', true);
+        $headerFn = function() use ($pdf, $leftX, $col, $rowHHeader, $show_codes) {
+            $pdf->SetFont('Times','B',9);
+            $pdf->SetFillColor(230,230,230);
+            $pdf->SetX($leftX);
+            $pdf->Cell($col['n'], $rowHHeader, self::to_pdf_text('N°'), 1, 0, 'C', true);
+            if ($show_codes) {
+                $pdf->Cell($col['code'], $rowHHeader, self::to_pdf_text('Código'), 1, 0, 'C', true);
+            }
+            $pdf->Cell($col['detail'], $rowHHeader, self::to_pdf_text('Detalle'), 1, 0, 'C', true);
+            $pdf->Cell($col['unit_price'], $rowHHeader, self::to_pdf_text('Valor Neto'), 1, 0, 'C', true);
+            $pdf->Cell($col['unit'], $rowHHeader, self::to_pdf_text('Un.'), 1, 0, 'C', true);
+            $pdf->Cell($col['discount'], $rowHHeader, self::to_pdf_text('Descto'), 1, 0, 'C', true);
+            $pdf->Cell($col['qty'], $rowHHeader, self::to_pdf_text('Cantidad'), 1, 0, 'C', true);
+            $pdf->Cell($col['total'], $rowHHeader, self::to_pdf_text('V. Total'), 1, 1, 'C', true);
+            $pdf->SetFont('Times','',9);
+        };
 
-        $pdf->SetFont('Times','',9);
+        $headerFn();
 
         $neto = 0;
 
         foreach (($payload['items'] ?? []) as $it) {
-            $pdf->SetX($leftX);
             $detail = self::to_pdf_text($it['detail'] ?? '');
 
             // Manual code: in INTERNAL PDF we must never fallback to pauta/part.
@@ -496,47 +499,74 @@ return $d.' de '.$mm.' del '.$y;
             $priceText = $unit_price > 0 ? self::money_clp($unit_price) : '-';
             $totalText = $line > 0 ? self::money_clp($line) : '-';
 
-            // compute row height using MultiCell approach
+            $lineCounts = [
+                self::count_lines($pdf, $col['n'], (string)($it['n'] ?? '')),
+                self::count_lines($pdf, $col['detail'], $detail),
+                self::count_lines($pdf, $col['unit_price'], $priceText),
+                self::count_lines($pdf, $col['unit'], (string)($it['unit'] ?? '')),
+                self::count_lines($pdf, $col['discount'], $disc > 0 ? (rtrim(rtrim(number_format($disc, 2, '.', ''), '0'), '.') . '%') : ''),
+                self::count_lines($pdf, $col['qty'], $qty > 0 ? rtrim(rtrim(number_format($qty, 2, '.', ''), '0'), '.') : ''),
+                self::count_lines($pdf, $col['total'], $totalText),
+            ];
+            if ($show_codes) {
+                $lineCounts[] = self::count_lines($pdf, $col['code'], $missing_code ? 'INGRESAR' : $raw_code);
+            }
+            $maxLines = max($lineCounts);
+            $rowHeight = max(6, $rowLineH * $maxLines);
+
+            if ($pdf->GetY() + $rowHeight > $pageBottom) {
+                $pdf->AddPage();
+                $pageBottom = $pdf->GetPageHeight() - 16;
+                self::render_watermark($pdf, $payload);
+                $headerFn();
+            }
+
+            $startX = $leftX;
             $startY = $pdf->GetY();
 
-            // Pre-calc lines based on width
-            $lines = self::count_lines($pdf, $col['detail'], $detail);
-            $h = max(6, $rowLineH * $lines);
-
-            $pdf->Cell($col['n'], $h, self::to_pdf_text((string)($it['n'] ?? '')), 1, 0, 'C');
+            $pdf->Rect($startX, $startY, $col['n'], $rowHeight);
+            $x = $startX + $col['n'];
             if ($show_codes) {
+                $pdf->Rect($x, $startY, $col['code'], $rowHeight);
+                $x += $col['code'];
+            }
+            $pdf->Rect($x, $startY, $col['detail'], $rowHeight);
+            $x += $col['detail'];
+            $pdf->Rect($x, $startY, $col['unit_price'], $rowHeight);
+            $x += $col['unit_price'];
+            $pdf->Rect($x, $startY, $col['unit'], $rowHeight);
+            $x += $col['unit'];
+            $pdf->Rect($x, $startY, $col['discount'], $rowHeight);
+            $x += $col['discount'];
+            $pdf->Rect($x, $startY, $col['qty'], $rowHeight);
+            $x += $col['qty'];
+            $pdf->Rect($x, $startY, $col['total'], $rowHeight);
+
+            $pdf->SetXY($startX, $startY);
+            $pdf->Cell($col['n'], $rowHeight, self::to_pdf_text((string)($it['n'] ?? '')), 0, 0, 'C');
+            if ($show_codes) {
+                $codeText = $missing_code ? 'INGRESAR' : $raw_code;
                 if ($missing_code) {
                     $pdf->SetTextColor(200, 0, 0);
-                    $pdf->Cell($col['code'], $h, self::to_pdf_text('INGRESAR'), 1, 0, 'L');
+                }
+                $pdf->Cell($col['code'], $rowHeight, self::to_pdf_text($codeText), 0, 0, 'L');
+                if ($missing_code) {
                     $pdf->SetTextColor(0, 0, 0);
-                } else {
-                    $pdf->Cell($col['code'], $h, self::to_pdf_text($raw_code), 1, 0, 'L');
                 }
             }
 
-            $xDetail = $pdf->GetX();
-            $yDetail = $pdf->GetY();
-            $pdf->MultiCell($col['detail'], $rowLineH, $detail, 1, 'L');
-            $pdf->SetXY($xDetail + $col['detail'], $yDetail);
+            $detailX = $pdf->GetX();
+            $detailY = $pdf->GetY();
+            $pdf->MultiCell($col['detail'], $rowLineH, $detail, 0, 'L');
+            $pdf->SetXY($detailX + $col['detail'], $detailY);
 
-            $pdf->Cell($col['unit_price'], $h, self::to_pdf_text($priceText), 1, 0, 'R');
-            $pdf->Cell($col['unit'], $h, self::to_pdf_text($it['unit'] ?? ''), 1, 0, 'C');
-            $pdf->Cell($col['discount'], $h, self::to_pdf_text($disc > 0 ? (rtrim(rtrim(number_format($disc, 2, '.', ''), '0'), '.') . '%') : ''), 1, 0, 'C');
-            $pdf->Cell($col['qty'], $h, self::to_pdf_text($qty > 0 ? rtrim(rtrim(number_format($qty, 2, '.', ''), '0'), '.') : ''), 1, 0, 'C');
-            $pdf->Cell($col['total'], $h, self::to_pdf_text($totalText), 1, 1, 'R');
+            $pdf->Cell($col['unit_price'], $rowHeight, self::to_pdf_text($priceText), 0, 0, 'R');
+            $pdf->Cell($col['unit'], $rowHeight, self::to_pdf_text($it['unit'] ?? ''), 0, 0, 'C');
+            $pdf->Cell($col['discount'], $rowHeight, self::to_pdf_text($disc > 0 ? (rtrim(rtrim(number_format($disc, 2, '.', ''), '0'), '.') . '%') : ''), 0, 0, 'C');
+            $pdf->Cell($col['qty'], $rowHeight, self::to_pdf_text($qty > 0 ? rtrim(rtrim(number_format($qty, 2, '.', ''), '0'), '.') : ''), 0, 0, 'C');
+            $pdf->Cell($col['total'], $rowHeight, self::to_pdf_text($totalText), 0, 1, 'R');
 
-            // Align Y
-            $pdf->SetY($startY + $h);
-        }
-
-        // Watermark (parts type)
-        if ($payload['parts_type'] !== 'ALTERNATIVOS') {
-            $rep_big = 'REPUESTOS 100% ORIGINALES';
-            $pdf->SetTextColor(210,210,210);
-            $pdf->SetFont('Times','B',34);
-            $pdf->SetXY(0, 150);
-            $pdf->Cell(210, 16, self::to_pdf_text($rep_big), 0, 1, 'C');
-            $pdf->SetTextColor(0,0,0);
+            $pdf->SetY($startY + $rowHeight);
         }
 
         // Observations line (template style)
@@ -585,6 +615,17 @@ return $d.' de '.$mm.' del '.$y;
         if (!empty($payload['seller']['role'])) $pdf->Cell(0, 4.8, self::to_pdf_text($payload['seller']['role']), 0, 1, 'L');
 
         return $pdf->Output('S');
+    }
+
+    private static function render_watermark($pdf, $payload) {
+        if (($payload['parts_type'] ?? '') === 'ALTERNATIVOS') {
+            return;
+        }
+        $pdf->SetTextColor(235,235,235);
+        $pdf->SetFont('Times','B',30);
+        $pdf->SetXY(0, 150);
+        $pdf->Cell(210, 14, self::to_pdf_text('REPUESTOS 100% ORIGINALES'), 0, 1, 'C');
+        $pdf->SetTextColor(0,0,0);
     }
 
     public static function get_quote_log() {

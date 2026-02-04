@@ -2,14 +2,14 @@
 /**
  * Plugin Name: Agrocampo – Cotizador PDF
  * Description: Cotizador frontend (sin theme) que genera cotizaciones en PDF.
- * Version: 1.3.0
+ * Version: 1.3.1
  * Author: Rocket Solutions
  * Requires PHP: 7.4
  */
 
 if (!defined('ABSPATH')) { exit; }
 
-define('ACPDF_VER', '1.3.0');
+define('ACPDF_VER', '1.3.1');
 define('ACPDF_SLUG', 'agrocampo-cotizador-pdf');
 define('ACPDF_DIR', plugin_dir_path(__FILE__));
 define('ACPDF_URL', plugin_dir_url(__FILE__));
@@ -105,6 +105,8 @@ class Agrocampo_Cotizador_PDF {
 
 /**
  * Changelog
+ * 1.3.1
+ * - Corrige la legibilidad de la tabla PDF con altura de fila dinámica y saltos de página con encabezado.
  * 1.3.0
  * - Permite letras en el campo Serie y su impresión en PDF.
  * - Oculta el watermark en PDFs con repuestos alternativos.
