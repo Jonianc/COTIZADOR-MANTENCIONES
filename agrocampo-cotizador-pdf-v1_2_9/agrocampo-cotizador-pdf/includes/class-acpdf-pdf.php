@@ -117,7 +117,7 @@ return $d.' de '.$mm.' del '.$y;
         if ($maint_hours === '') $maint_hours = '100';
 
         $internal_no = preg_replace('/[^0-9]/', '', $get('internal_no', ''));
-        $serial_no = preg_replace('/[^0-9]/', '', $get('serial_no', ''));
+        $serial_no = preg_replace('/[^a-zA-Z0-9-]/', '', $get('serial_no', ''));
 
 
         // Seller selection (multi-seller). Fallback to legacy settings.
@@ -330,7 +330,7 @@ return $d.' de '.$mm.' del '.$y;
         $title = trim(($payload['model'] ? $payload['model'].' ' : '') . 'MANTENCION ' . $payload['maint_hours'] . ' HORAS');
 
         $pdf = new ACPDF_FPDF('P', 'mm', 'A4');
-        $pdf->SetAutoPageBreak(true, 14);
+        $pdf->SetAutoPageBreak(true, 16);
         $pdf->AddPage();
 
         // Logo
@@ -351,7 +351,7 @@ return $d.' de '.$mm.' del '.$y;
             $pdf->Image($logo, 12, 10, $logo_width);
         }
 
-        $leftX = 14;
+        $leftX = 12;
 
         // Header (quote number centered)
         $pdf->SetFont('Times','B',14);
@@ -360,58 +360,80 @@ return $d.' de '.$mm.' del '.$y;
 
         // Info block similar to template
         $y0 = 46;
-        $pdf->SetFont('Times','B',10);
+        $lineH = 5.2;
+        $labelW = 24;
+        $colonW = 3;
+        $leftValueW = 84;
+        $rightX = 118;
+        $rightLabelW = 22;
+        $rightValueW = 60;
+
+        $pdf->SetFont('Times','B',9.5);
 
         // Left labels
         $pdf->SetXY($leftX, $y0);
-        $pdf->Cell(22, 5, self::to_pdf_text('Fecha'), 0, 0, 'L');
-        $pdf->Cell(3, 5, ':', 0, 0, 'L');
-        $pdf->SetFont('Times','B',10);
-        $pdf->Cell(90, 5, self::to_pdf_text(self::date_long_es($payload['date_iso'])), 0, 0, 'L');
+        $pdf->Cell($labelW, $lineH, self::to_pdf_text('Fecha'), 0, 0, 'L');
+        $pdf->Cell($colonW, $lineH, ':', 0, 0, 'L');
+        $pdf->SetFont('Times','',9.5);
+        $pdf->Cell($leftValueW, $lineH, self::to_pdf_text(self::date_long_es($payload['date_iso'])), 0, 0, 'L');
 
         // Right labels
-        $pdf->SetFont('Times','B',10);
-        $pdf->SetXY(120, $y0);
-        $pdf->Cell(22, 5, self::to_pdf_text('Rut'), 0, 0, 'L');
-        $pdf->Cell(3, 5, ':', 0, 0, 'L');
-        $pdf->Cell(60, 5, self::to_pdf_text($payload['rut']), 0, 1, 'L');
+        $pdf->SetFont('Times','B',9.5);
+        $pdf->SetXY($rightX, $y0);
+        $pdf->Cell($rightLabelW, $lineH, self::to_pdf_text('Rut'), 0, 0, 'L');
+        $pdf->Cell($colonW, $lineH, ':', 0, 0, 'L');
+        $pdf->SetFont('Times','',9.5);
+        $pdf->Cell($rightValueW, $lineH, self::to_pdf_text($payload['rut']), 0, 1, 'L');
 
-        $pdf->SetFont('Times','B',10);
-        $pdf->SetXY($leftX, $y0+6);
-        $pdf->Cell(22, 5, self::to_pdf_text('Cliente'), 0, 0, 'L');
-        $pdf->Cell(3, 5, ':', 0, 0, 'L');
-        $pdf->Cell(90, 5, self::to_pdf_text($payload['client']), 0, 0, 'L');
-        $pdf->SetXY(120, $y0+6);
-        $pdf->Cell(22, 5, self::to_pdf_text('Fono'), 0, 0, 'L');
-        $pdf->Cell(3, 5, ':', 0, 0, 'L');
-        $pdf->Cell(60, 5, self::to_pdf_text($payload['phone']), 0, 1, 'L');
+        $pdf->SetFont('Times','B',9.5);
+        $pdf->SetXY($leftX, $y0 + 6);
+        $pdf->Cell($labelW, $lineH, self::to_pdf_text('Cliente'), 0, 0, 'L');
+        $pdf->Cell($colonW, $lineH, ':', 0, 0, 'L');
+        $pdf->SetFont('Times','',9.5);
+        $pdf->Cell($leftValueW, $lineH, self::to_pdf_text($payload['client']), 0, 0, 'L');
+        $pdf->SetFont('Times','B',9.5);
+        $pdf->SetXY($rightX, $y0 + 6);
+        $pdf->Cell($rightLabelW, $lineH, self::to_pdf_text('Fono'), 0, 0, 'L');
+        $pdf->Cell($colonW, $lineH, ':', 0, 0, 'L');
+        $pdf->SetFont('Times','',9.5);
+        $pdf->Cell($rightValueW, $lineH, self::to_pdf_text($payload['phone']), 0, 1, 'L');
 
-        $pdf->SetXY($leftX, $y0+12);
-        $pdf->Cell(22, 5, self::to_pdf_text('Modelo'), 0, 0, 'L');
-        $pdf->Cell(3, 5, ':', 0, 0, 'L');
-        $pdf->Cell(90, 5, self::to_pdf_text($payload['model']), 0, 0, 'L');
-        $pdf->SetXY(120, $y0+12);
-        $pdf->Cell(22, 5, self::to_pdf_text('E-mail'), 0, 0, 'L');
-        $pdf->Cell(3, 5, ':', 0, 0, 'L');
-        $pdf->Cell(60, 5, self::to_pdf_text($payload['email']), 0, 1, 'L');
+        $pdf->SetFont('Times','B',9.5);
+        $pdf->SetXY($leftX, $y0 + 12);
+        $pdf->Cell($labelW, $lineH, self::to_pdf_text('Modelo'), 0, 0, 'L');
+        $pdf->Cell($colonW, $lineH, ':', 0, 0, 'L');
+        $pdf->SetFont('Times','',9.5);
+        $pdf->Cell($leftValueW, $lineH, self::to_pdf_text($payload['model']), 0, 0, 'L');
+        $pdf->SetFont('Times','B',9.5);
+        $pdf->SetXY($rightX, $y0 + 12);
+        $pdf->Cell($rightLabelW, $lineH, self::to_pdf_text('E-mail'), 0, 0, 'L');
+        $pdf->Cell($colonW, $lineH, ':', 0, 0, 'L');
+        $pdf->SetFont('Times','',9.5);
+        $pdf->Cell($rightValueW, $lineH, self::to_pdf_text($payload['email']), 0, 1, 'L');
 
-        $pdf->SetXY($leftX, $y0+18);
-        $pdf->Cell(22, 5, self::to_pdf_text('N° Interno'), 0, 0, 'L');
-        $pdf->Cell(3, 5, ':', 0, 0, 'L');
-        $pdf->Cell(90, 5, self::to_pdf_text($payload['internal_no']), 0, 0, 'L');
-        $pdf->SetXY(120, $y0+18);
-        $pdf->Cell(22, 5, self::to_pdf_text('Serie'), 0, 0, 'L');
-        $pdf->Cell(3, 5, ':', 0, 0, 'L');
-        $pdf->Cell(60, 5, self::to_pdf_text($payload['serial_no']), 0, 1, 'L');
+        $pdf->SetFont('Times','B',9.5);
+        $pdf->SetXY($leftX, $y0 + 18);
+        $pdf->Cell($labelW, $lineH, self::to_pdf_text('N° Interno'), 0, 0, 'L');
+        $pdf->Cell($colonW, $lineH, ':', 0, 0, 'L');
+        $pdf->SetFont('Times','',9.5);
+        $pdf->Cell($leftValueW, $lineH, self::to_pdf_text($payload['internal_no']), 0, 0, 'L');
+        $pdf->SetFont('Times','B',9.5);
+        $pdf->SetXY($rightX, $y0 + 18);
+        $pdf->Cell($rightLabelW, $lineH, self::to_pdf_text('Serie'), 0, 0, 'L');
+        $pdf->Cell($colonW, $lineH, ':', 0, 0, 'L');
+        $pdf->SetFont('Times','',9.5);
+        $pdf->Cell($rightValueW, $lineH, self::to_pdf_text($payload['serial_no']), 0, 1, 'L');
 
-        $pdf->SetXY(120, $y0+24);
-        $pdf->Cell(22, 5, self::to_pdf_text('Ubicación'), 0, 0, 'L');
-        $pdf->Cell(3, 5, ':', 0, 0, 'L');
-        $pdf->Cell(60, 5, self::to_pdf_text($payload['location']), 0, 1, 'L');
+        $pdf->SetFont('Times','B',9.5);
+        $pdf->SetXY($rightX, $y0 + 24);
+        $pdf->Cell($rightLabelW, $lineH, self::to_pdf_text('Ubicación'), 0, 0, 'L');
+        $pdf->Cell($colonW, $lineH, ':', 0, 0, 'L');
+        $pdf->SetFont('Times','',9.5);
+        $pdf->Cell($rightValueW, $lineH, self::to_pdf_text($payload['location']), 0, 1, 'L');
 
         // Title
         $pdf->SetFont('Times','B',12);
-        $pdf->SetXY(0, 78);
+        $pdf->SetXY(0, 76);
         $pdf->Cell(210, 7, self::to_pdf_text($title), 0, 1, 'C');
 
         // Table header
@@ -421,12 +443,12 @@ return $d.' de '.$mm.' del '.$y;
 
         $col = [
             'n' => 8,
-            'code' => 24,
-            'detail' => 70,
-            'unit_price' => 22,
+            'code' => 22,
+            'detail' => 74,
+            'unit_price' => 20,
             'unit' => 10,
-            'discount' => 14,
-            'qty' => 16,
+            'discount' => 13,
+            'qty' => 15,
             'total' => 22,
         ];
 
@@ -435,17 +457,19 @@ return $d.' de '.$mm.' del '.$y;
             $col['code'] = 0;
         }
 
+        $rowHHeader = 6.5;
+        $rowLineH = 4.4;
         $pdf->SetX($leftX);
-        $pdf->Cell($col['n'], 7, self::to_pdf_text('N°'), 1, 0, 'C', true);
+        $pdf->Cell($col['n'], $rowHHeader, self::to_pdf_text('N°'), 1, 0, 'C', true);
         if ($show_codes) {
-            $pdf->Cell($col['code'], 7, self::to_pdf_text('Código'), 1, 0, 'C', true);
+            $pdf->Cell($col['code'], $rowHHeader, self::to_pdf_text('Código'), 1, 0, 'C', true);
         }
-        $pdf->Cell($col['detail'], 7, self::to_pdf_text('Detalle'), 1, 0, 'C', true);
-        $pdf->Cell($col['unit_price'], 7, self::to_pdf_text('Valor Neto'), 1, 0, 'C', true);
-        $pdf->Cell($col['unit'], 7, self::to_pdf_text('Un.'), 1, 0, 'C', true);
-        $pdf->Cell($col['discount'], 7, self::to_pdf_text('Descto'), 1, 0, 'C', true);
-        $pdf->Cell($col['qty'], 7, self::to_pdf_text('Cantidad'), 1, 0, 'C', true);
-        $pdf->Cell($col['total'], 7, self::to_pdf_text('V. Total'), 1, 1, 'C', true);
+        $pdf->Cell($col['detail'], $rowHHeader, self::to_pdf_text('Detalle'), 1, 0, 'C', true);
+        $pdf->Cell($col['unit_price'], $rowHHeader, self::to_pdf_text('Valor Neto'), 1, 0, 'C', true);
+        $pdf->Cell($col['unit'], $rowHHeader, self::to_pdf_text('Un.'), 1, 0, 'C', true);
+        $pdf->Cell($col['discount'], $rowHHeader, self::to_pdf_text('Descto'), 1, 0, 'C', true);
+        $pdf->Cell($col['qty'], $rowHHeader, self::to_pdf_text('Cantidad'), 1, 0, 'C', true);
+        $pdf->Cell($col['total'], $rowHHeader, self::to_pdf_text('V. Total'), 1, 1, 'C', true);
 
         $pdf->SetFont('Times','',9);
 
@@ -477,7 +501,7 @@ return $d.' de '.$mm.' del '.$y;
 
             // Pre-calc lines based on width
             $lines = self::count_lines($pdf, $col['detail'], $detail);
-            $h = max(6, 4.5 * $lines);
+            $h = max(6, $rowLineH * $lines);
 
             $pdf->Cell($col['n'], $h, self::to_pdf_text((string)($it['n'] ?? '')), 1, 0, 'C');
             if ($show_codes) {
@@ -492,7 +516,7 @@ return $d.' de '.$mm.' del '.$y;
 
             $xDetail = $pdf->GetX();
             $yDetail = $pdf->GetY();
-            $pdf->MultiCell($col['detail'], 4.5, $detail, 1, 'L');
+            $pdf->MultiCell($col['detail'], $rowLineH, $detail, 1, 'L');
             $pdf->SetXY($xDetail + $col['detail'], $yDetail);
 
             $pdf->Cell($col['unit_price'], $h, self::to_pdf_text($priceText), 1, 0, 'R');
@@ -506,22 +530,32 @@ return $d.' de '.$mm.' del '.$y;
         }
 
         // Watermark (parts type)
-        $rep_big = ($payload['parts_type'] === 'ALTERNATIVOS') ? 'REPUESTOS ALTERNATIVOS' : 'REPUESTOS 100% ORIGINALES';
-        $pdf->SetTextColor(210,210,210);
-        $pdf->SetFont('Times','B',34);
-        $pdf->SetXY(0, 150);
-        $pdf->Cell(210, 16, self::to_pdf_text($rep_big), 0, 1, 'C');
-        $pdf->SetTextColor(0,0,0);
+        if ($payload['parts_type'] !== 'ALTERNATIVOS') {
+            $rep_big = 'REPUESTOS 100% ORIGINALES';
+            $pdf->SetTextColor(210,210,210);
+            $pdf->SetFont('Times','B',34);
+            $pdf->SetXY(0, 150);
+            $pdf->Cell(210, 16, self::to_pdf_text($rep_big), 0, 1, 'C');
+            $pdf->SetTextColor(0,0,0);
+        }
+
+        // Observations line (template style)
+        $pdf->SetXY($leftX, max($pdf->GetY() + 4, 168));
+        $pdf->SetFont('Times','B',9.5);
+        $obs = trim($payload['observations']);
+        if ($obs !== '') {
+            $pdf->MultiCell(120, 4.8, self::to_pdf_text('OBSERVACIONES: '.$obs), 0, 'L');
+        }
 
         // Totals box (right)
         $pdf->Ln(4);
         $iva = $neto * (floatval($payload['iva_percent'])/100.0);
         $total = $neto + $iva;
 
-        $boxX = 130;
+        $boxX = 128;
         $boxW = 65;
         $rowH = 6;
-        $yBox = max($pdf->GetY(), 190);
+        $yBox = max($pdf->GetY() + 6, 188);
         if ($yBox > 230) { $yBox = 230; }
         $pdf->SetXY($boxX, $yBox);
         $pdf->SetFont('Times','B',10);
@@ -535,17 +569,9 @@ return $d.' de '.$mm.' del '.$y;
         $pdf->Cell(30, $rowH, self::to_pdf_text('Valor Total'), 1, 0, 'L', true);
         $pdf->Cell($boxW-30, $rowH, self::to_pdf_text(self::money_clp($total)), 1, 1, 'R');
 
-        // Observations line (template style)
-        $pdf->SetXY($leftX, 175);
-        $pdf->SetFont('Times','B',9.5);
-        $obs = trim($payload['observations']);
-        if ($obs !== '') {
-            $pdf->MultiCell(120, 4.8, self::to_pdf_text('OBSERVACIONES: '.$obs), 0, 'L');
-        }
-
         // Seller block (bottom-right)
         $pdf->SetFont('Times','B',9.5);
-        $sx = 118;
+        $sx = 120;
         $sy = 252;
         $pdf->SetXY($sx, $sy);
         $pdf->Cell(0, 4.8, self::to_pdf_text('Cordialmente,  '.$payload['seller']['name']), 0, 1, 'L');

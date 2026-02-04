@@ -50,7 +50,7 @@ include ACPDF_DIR . 'templates/partials/head.php';
                   </div>
                   <div class="col-3">
                     <label for="serial_no">Serie</label>
-                    <input type="number" name="serial_no" id="serial_no" inputmode="numeric" min="0" step="1" />
+                    <input type="text" name="serial_no" id="serial_no" inputmode="text" />
                   </div>
                   <div class="col-3">
                     <label for="date_iso">Fecha</label>
