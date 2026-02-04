@@ -319,7 +319,6 @@ class ACPDF_Settings {
         </div>
         <script>
           (function(){
-            if (!window.wp || !wp.media) return;
             const selectBtn = document.getElementById('acpdf-logo-select');
             const removeBtn = document.getElementById('acpdf-logo-remove');
             const preview = document.getElementById('acpdf-logo-preview');
@@ -327,23 +326,31 @@ class ACPDF_Settings {
             if (!selectBtn || !removeBtn || !preview || !input) return;
 
             let frame;
-            selectBtn.addEventListener('click', function(){
-              if (frame) { frame.open(); return; }
-              frame = wp.media({
-                title: 'Seleccionar logo',
-                button: { text: 'Usar este logo' },
-                library: { type: 'image' },
-                multiple: false
+            function bindMediaPicker() {
+              if (!window.wp || !wp.media) {
+                window.setTimeout(bindMediaPicker, 200);
+                return;
+              }
+              selectBtn.addEventListener('click', function(){
+                if (frame) { frame.open(); return; }
+                frame = wp.media({
+                  title: 'Seleccionar logo',
+                  button: { text: 'Usar este logo' },
+                  library: { type: 'image' },
+                  multiple: false
+                });
+                frame.on('select', function(){
+                  const attachment = frame.state().get('selection').first().toJSON();
+                  input.value = attachment.id || '';
+                  preview.src = attachment.url || '';
+                  preview.style.display = attachment.url ? 'block' : 'none';
+                  removeBtn.style.display = attachment.url ? 'inline-block' : 'none';
+                });
+                frame.open();
               });
-              frame.on('select', function(){
-                const attachment = frame.state().get('selection').first().toJSON();
-                input.value = attachment.id || '';
-                preview.src = attachment.url || '';
-                preview.style.display = attachment.url ? 'block' : 'none';
-                removeBtn.style.display = attachment.url ? 'inline-block' : 'none';
-              });
-              frame.open();
-            });
+            }
+
+            bindMediaPicker();
 
             removeBtn.addEventListener('click', function(){
               input.value = '';
