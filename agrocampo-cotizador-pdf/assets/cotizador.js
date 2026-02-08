@@ -663,9 +663,36 @@ function applyPrefill(d) {
 function validateForm() {
   let valid = true;
   const errors = [];
+  const errorBox = id('acpdf-errors');
+
+  const clearFieldErrors = () => {
+    $$('.error').forEach(el => el.classList.remove('error'));
+    $$('.field-error').forEach(el => el.remove());
+  };
+
+  const setFieldError = (el, message) => {
+    if (!el) return;
+    el.classList.add('error');
+    const errorEl = document.createElement('div');
+    errorEl.className = 'field-error';
+    errorEl.textContent = message;
+    el.insertAdjacentElement('afterend', errorEl);
+  };
+
+  const showSummary = () => {
+    if (!errorBox) return;
+    if (!errors.length) {
+      errorBox.classList.add('hidden');
+      errorBox.textContent = '';
+      return;
+    }
+    errorBox.classList.remove('hidden');
+    errorBox.innerHTML = '<strong>Revisa los siguientes errores:</strong><ul><li>' + errors.join('</li><li>') + '</li></ul>';
+    errorBox.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  };
 
   // Clear previous errors
-  $$('.error').forEach(el => el.classList.remove('error'));
+  clearFieldErrors();
 
   // Required fields
   const requiredFields = [
@@ -676,11 +703,51 @@ function validateForm() {
   requiredFields.forEach(field => {
     const el = document.querySelector(`[name="${field.name}"]`);
     if (el && !el.value.trim()) {
-      el.classList.add('error');
+      setFieldError(el, `${field.label} es requerido`);
       errors.push(`${field.label} es requerido`);
       valid = false;
     }
   });
+
+  const rutEl = document.querySelector('[name="rut"]');
+  if (rutEl && rutEl.value.trim()) {
+    const rut = rutEl.value.trim();
+    const rutRegex = /^[0-9]{1,2}\.?[0-9]{3}\.?[0-9]{3}-[0-9kK]$/;
+    if (!rutRegex.test(rut)) {
+      setFieldError(rutEl, 'Formato de RUT inválido (ej: 76.155.060-8)');
+      errors.push('Formato de RUT inválido');
+      valid = false;
+    }
+  }
+
+  if (!isRepairMode()) {
+    if (elHoursSet && String(elHoursSet.value || '') === 'MANUAL') {
+      const manualVal = parseNum(elHoursManual?.value);
+      if (!manualVal || manualVal <= 0) {
+        setFieldError(elHoursManual, 'Ingresa las horas manuales');
+        errors.push('Horas manuales es requerido');
+        valid = false;
+      }
+    } else {
+      const hoursVal = String(elHours?.value || '').trim();
+      if (!hoursVal) {
+        setFieldError(elHours, 'Selecciona un tipo de mantención');
+        errors.push('Tipo de mantención es requerido');
+        valid = false;
+      }
+    }
+  }
+
+  if (isRepairMode()) {
+    const laborHours = parseNum(document.querySelector('[name="labor_hours"]')?.value);
+    const laborRate = parseNum(document.querySelector('[name="labor_rate"]')?.value);
+    if ((laborHours > 0 && laborRate <= 0) || (laborRate > 0 && laborHours <= 0)) {
+      setFieldError(id('acpdf-labor-hours'), 'Completa horas y valor HH');
+      setFieldError(id('acpdf-labor-rate'), 'Completa horas y valor HH');
+      errors.push('Mano de obra requiere horas y valor HH');
+      valid = false;
+    }
+  }
 
   // At least one item with price and qty
   const rows = tbody.querySelectorAll('tr');
@@ -689,18 +756,35 @@ function validateForm() {
   rows.forEach(tr => {
     const price = parseNum(tr.querySelector('input[name="item_unit_price[]"]')?.value);
     const qty = parseNum(tr.querySelector('input[name="item_qty[]"]')?.value);
+    const discount = parseNum(tr.querySelector('input[name="item_discount[]"]')?.value);
+    if (discount > 100) {
+      const discEl = tr.querySelector('input[name="item_discount[]"]');
+      setFieldError(discEl, 'El descuento no puede ser mayor a 100%');
+      errors.push('Descuento mayor a 100%');
+      valid = false;
+    }
     if (price > 0 && qty > 0) {
       hasValidItem = true;
     }
   });
 
-  if (!hasValidItem) {
+  const hasRepairCosts = isRepairMode() && (
+    parseNum(document.querySelector('[name="labor_hours"]')?.value) > 0 ||
+    parseNum(document.querySelector('[name="labor_rate"]')?.value) > 0 ||
+    parseNum(document.querySelector('[name="travel_amount"]')?.value) > 0 ||
+    parseNum(document.querySelector('[name="external_amount"]')?.value) > 0
+  );
+
+  if (!hasValidItem && !hasRepairCosts) {
     errors.push('Debe tener al menos un ítem con precio y cantidad');
     valid = false;
   }
 
   if (!valid) {
-    alert('Por favor corrija los siguientes errores:\n\n• ' + errors.join('\n• '));
+    showSummary();
+  } else if (errorBox) {
+    errorBox.classList.add('hidden');
+    errorBox.textContent = '';
   }
 
   return valid;

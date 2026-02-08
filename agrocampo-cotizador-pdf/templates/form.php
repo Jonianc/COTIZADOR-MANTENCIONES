@@ -40,39 +40,49 @@ include ACPDF_DIR . 'templates/partials/head.php';
 
               <form id="acpdf-form" method="post" action="<?php echo esc_url(home_url('/agrocampo-cotizador/pdf')); ?>">
                 <?php wp_nonce_field('acpdf_make_pdf', 'acpdf_nonce'); ?>
+                <div id="acpdf-errors" class="alert alert-error hidden" role="alert"></div>
 
                 <div class="grid">
+
+                  <div class="col-12">
+                    <div class="section-title">Datos de cotización <span class="muted small">Campos obligatorios marcados con *</span></div>
+                    <div class="section-divider"></div>
+                  </div>
 
                   <!-- Fila 1: Datos internos y fecha -->
                   <div class="col-3">
                     <label for="internal_no">N° Interno</label>
-                    <input type="number" name="internal_no" id="internal_no" inputmode="numeric" min="0" step="1" />
+                    <input type="number" name="internal_no" id="internal_no" inputmode="numeric" min="0" step="1" placeholder="Ej: 12345" />
+                    <div class="muted small">Opcional, para control interno.</div>
                   </div>
                   <div class="col-3">
                     <label for="serial_no">Serie</label>
-                    <input type="text" name="serial_no" id="serial_no" inputmode="text" />
+                    <input type="text" name="serial_no" id="serial_no" inputmode="text" placeholder="Ej: MF-9A3X" />
+                    <div class="muted small">Opcional, si aplica.</div>
                   </div>
                   <div class="col-3">
                     <label for="date_iso">Fecha</label>
                     <input type="date" name="date_iso" id="acpdf-date" value="<?php echo esc_attr(date_i18n('Y-m-d')); ?>" />
+                    <div class="muted small">Se usa para numerar la cotización.</div>
                   </div>
                   <div class="col-3">
                     <label for="rut">RUT</label>
-                    <input name="rut" id="rut" placeholder="76.155.060-8" />
+                    <input name="rut" id="rut" placeholder="76.155.060-8" inputmode="text" />
+                    <div class="muted small">Formato esperado: 76.155.060-8.</div>
                   </div>
 
                   <!-- Fila 2: Datos cliente -->
                   <div class="col-6">
-                    <label for="client">Cliente <span style="color:var(--red)">*</span></label>
-                    <input name="client" id="client" required />
+                    <label for="client">Cliente <span class="required">*</span></label>
+                    <input name="client" id="client" required placeholder="Razón social o nombre" />
                   </div>
                   <div class="col-3">
                     <label for="phone">Teléfono</label>
-                    <input name="phone" id="phone" type="tel" />
+                    <input name="phone" id="phone" type="tel" placeholder="+56 9 1234 5678" />
                   </div>
                   <div class="col-3">
                     <label for="email">Email</label>
-                    <input type="email" name="email" id="email" />
+                    <input type="email" name="email" id="email" placeholder="correo@cliente.cl" />
                   </div>
 
                   <!-- Vendedor -->
@@ -96,6 +106,10 @@ include ACPDF_DIR . 'templates/partials/head.php';
                   </div>
 
                   <!-- Fila 3: Marca, pauta y modelo -->
+                  <div class="col-12">
+                    <div class="section-title">Equipo y pauta</div>
+                    <div class="section-divider"></div>
+                  </div>
                   <div class="col-4 acpdf-only-maint">
                     <label for="acpdf-brand">Marca</label>
                     <select name="brand_key" id="acpdf-brand">
@@ -113,12 +127,16 @@ include ACPDF_DIR . 'templates/partials/head.php';
                   </div>
 
                   <div class="col-4">
-                    <label for="acpdf-model">Modelo <span style="color:var(--red)">*</span></label>
-                    <input name="model" id="acpdf-model" required />
+                    <label for="acpdf-model">Modelo <span class="required">*</span></label>
+                    <input name="model" id="acpdf-model" required placeholder="Ej: MF 4275" />
                   </div>
 
                   <!-- Fila 4: Configuración mantención -->
                   <!-- Fila 4: Tipo de cotización -->
+                  <div class="col-12">
+                    <div class="section-title">Tipo de cotización</div>
+                    <div class="section-divider"></div>
+                  </div>
                   <div class="col-3">
                     <label for="acpdf-quote-type">Tipo de cotización</label>
                     <select name="quote_type" id="acpdf-quote-type">
@@ -189,11 +207,19 @@ include ACPDF_DIR . 'templates/partials/head.php';
 
                   <!-- Observaciones -->
                   <div class="col-12">
+                    <div class="section-title">Observaciones</div>
+                    <div class="section-divider"></div>
+                  </div>
+                  <div class="col-12">
                     <label for="observations">Observaciones</label>
                     <textarea name="observations" id="observations" style="min-height:60px"></textarea>
                   </div>
 
                   <!-- Tabla de ítems -->
+                  <div class="col-12">
+                    <div class="section-title">Ítems de la cotización</div>
+                    <div class="section-divider"></div>
+                  </div>
                   <div class="col-12">
                     <label>Ítems de la cotización</label>
                     <div class="table-responsive">

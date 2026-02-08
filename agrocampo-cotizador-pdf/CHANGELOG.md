@@ -1,4 +1,9 @@
 
+## 1.3.7 (2026-02-08)
+- Mejora UX/UI del formulario con secciones, ayudas y placeholders.
+- Validaciones más claras con mensajes en campo y resumen de errores.
+- Ajusta validaciones para reparación (costos adicionales) y mantención (horas).
+
 ## 1.3.6 (2026-02-05)
 - Alinea versión interna del plugin con el header.
 

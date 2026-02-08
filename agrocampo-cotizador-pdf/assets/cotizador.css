@@ -71,6 +71,22 @@ label {
   margin-bottom: 4px;
 }
 
+.section-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: #111;
+  margin-top: 4px;
+}
+
+.section-divider {
+  border-top: 1px dashed var(--border);
+  margin: 6px 0 2px;
+}
+
+.required {
+  color: var(--red);
+}
+
 input, select, textarea {
   width: 100%;
   padding: 10px;
@@ -89,6 +105,12 @@ input:focus, select:focus, textarea:focus {
 input.error, select.error, textarea.error {
   border-color: var(--red);
   background: #fff5f5;
+}
+
+.field-error {
+  margin-top: 4px;
+  font-size: 11px;
+  color: var(--red);
 }
 
 input:disabled, select:disabled, textarea:disabled {
