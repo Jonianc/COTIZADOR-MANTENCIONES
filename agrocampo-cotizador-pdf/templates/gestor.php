@@ -5,6 +5,7 @@ $title = isset($title) ? $title : 'Gestor de Cotizaciones';
 $menu_links = isset($menu_links) ? $menu_links : [];
 $client_filter = isset($client_filter) ? (string)$client_filter : '';
 $model_filter = isset($model_filter) ? (string)$model_filter : '';
+$seller_filter = isset($seller_filter) ? (string)$seller_filter : '';
 $quote_filter = isset($quote_filter) ? (string)$quote_filter : '';
 $date_from = isset($date_from) ? (string)$date_from : '';
 $date_to = isset($date_to) ? (string)$date_to : '';
@@ -13,6 +14,7 @@ $duplicated = isset($duplicated) ? (string)$duplicated : '';
 $export = isset($export) ? (string)$export : '';
 $per_page = isset($per_page) ? (int)$per_page : 25;
 $current_page = isset($current_page) ? (int)$current_page : 1;
+$seller_options = isset($seller_options) && is_array($seller_options) ? $seller_options : [];
 $css_url = ACPDF_URL . 'assets/cotizador.css?ver=' . ACPDF_VER;
 
 include ACPDF_DIR . 'templates/partials/head.php';
@@ -36,6 +38,17 @@ foreach ($log as $index => $entry) {
     $model = isset($entry['model']) ? (string)$entry['model'] : '';
     if ($model_filter !== '' && stripos($model, $model_filter) === false) {
         continue;
+    }
+
+    // Seller filter
+    $seller_name = trim((string)($entry['payload']['seller']['name'] ?? ''));
+    if ($seller_filter !== '') {
+        if ($seller_filter === '__none' && $seller_name !== '') {
+            continue;
+        }
+        if ($seller_filter !== '__none' && strcasecmp($seller_name, $seller_filter) !== 0) {
+            continue;
+        }
     }
 
     // Quote number filter
@@ -72,6 +85,7 @@ $filter_args = array_filter([
     'maint_hours' => $hours_filter,
     'client' => $client_filter,
     'model' => $model_filter,
+    'seller' => $seller_filter,
     'quote' => $quote_filter,
     'date_from' => $date_from,
     'date_to' => $date_to,
@@ -136,6 +150,16 @@ $filter_args = array_filter([
                 </div>
 
                 <div class="filter-group">
+                  <label for="acpdf-seller-filter">Vendedor</label>
+                  <select name="seller" id="acpdf-seller-filter">
+                    <option value="">Todos</option>
+                    <?php foreach ($seller_options as $value => $label) : ?>
+                      <option value="<?php echo esc_attr($value); ?>" <?php selected($seller_filter, (string)$value); ?>><?php echo esc_html($label); ?></option>
+                    <?php endforeach; ?>
+                  </select>
+                </div>
+
+                <div class="filter-group">
                   <label for="acpdf-date-from">Desde</label>
                   <input type="date" name="date_from" id="acpdf-date-from" value="<?php echo esc_attr($date_from); ?>">
                 </div>
@@ -190,7 +214,25 @@ $filter_args = array_filter([
                     </tr>
                   <?php
                   else :
+                    $grouped = [];
                     foreach ($paged_log as $index => $entry) {
+                        $seller_name = trim((string)($entry['payload']['seller']['name'] ?? ''));
+                        $group_key = $seller_name !== '' ? $seller_name : 'Sin vendedor';
+                        if (!isset($grouped[$group_key])) {
+                            $grouped[$group_key] = [];
+                        }
+                        $grouped[$group_key][$index] = $entry;
+                    }
+                    foreach ($grouped as $seller_label => $entries) {
+                        ?>
+                        <tr class="group-row">
+                          <td colspan="12">
+                            <strong><?php echo esc_html($seller_label); ?></strong>
+                            <span class="muted small">— <?php echo esc_html(count($entries)); ?> cotización(es)</span>
+                          </td>
+                        </tr>
+                        <?php
+                        foreach ($entries as $index => $entry) {
                         $pdf_url = wp_nonce_url(
                             home_url('/agrocampo-cotizador/gestor?view=' . $index),
                             'acpdf_view_quote_' . $index
@@ -236,6 +278,7 @@ $filter_args = array_filter([
                           </td>
                         </tr>
                         <?php
+                        }
                     }
                   endif;
                   ?>

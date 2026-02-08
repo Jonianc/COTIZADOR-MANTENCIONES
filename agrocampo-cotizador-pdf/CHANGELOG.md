@@ -1,4 +1,7 @@
 
+## 1.3.10 (2026-02-08)
+- Agrega filtro por vendedor y agrupación visual en el gestor.
+
 ## 1.3.9 (2026-02-08)
 - Incluye tipo de cotización reparación y campos asociados en el PDF.
 

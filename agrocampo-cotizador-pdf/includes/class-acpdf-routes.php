@@ -147,6 +147,9 @@ class ACPDF_Routes {
         $model_filter = isset($_GET['model']) ? sanitize_text_field(wp_unslash($_GET['model'])) : '';
         $model_filter = trim(substr($model_filter, 0, 120));
 
+        $seller_filter = isset($_GET['seller']) ? sanitize_text_field(wp_unslash($_GET['seller'])) : '';
+        $seller_filter = trim(substr($seller_filter, 0, 120));
+
         $quote_filter = isset($_GET['quote']) ? sanitize_text_field(wp_unslash($_GET['quote'])) : '';
         $quote_filter = trim(substr($quote_filter, 0, 50));
 
@@ -173,6 +176,16 @@ class ACPDF_Routes {
 
         $hours_options = [100, 400, 500, 800, 1000, 1200, 1500];
         sort($hours_options);
+        $seller_options = [];
+        foreach ($log as $entry) {
+            $seller_name = trim((string)($entry['payload']['seller']['name'] ?? ''));
+            if ($seller_name === '') {
+                $seller_options['__none'] = 'Sin vendedor';
+                continue;
+            }
+            $seller_options[$seller_name] = $seller_name;
+        }
+        ksort($seller_options, SORT_NATURAL | SORT_FLAG_CASE);
 
         $title = 'Gestor de Cotizaciones';
         $menu_links = [
@@ -182,9 +195,9 @@ class ACPDF_Routes {
         ];
 
         ACPDF_View::render('gestor', compact(
-            'hours_filter', 'client_filter', 'model_filter', 'quote_filter',
+            'hours_filter', 'client_filter', 'model_filter', 'seller_filter', 'quote_filter',
             'date_from', 'date_to', 'deleted', 'duplicated',
-            'log', 'hours_options', 'title', 'menu_links',
+            'log', 'hours_options', 'seller_options', 'title', 'menu_links',
             'per_page', 'current_page'
         ));
     }
@@ -204,7 +217,7 @@ class ACPDF_Routes {
         // Preserve filters on redirect
         $redirect_args = ['deleted' => $deleted];
         
-        $filter_keys = ['maint_hours', 'client', 'model', 'quote', 'date_from', 'date_to', 'per_page', 'paged'];
+        $filter_keys = ['maint_hours', 'client', 'model', 'seller', 'quote', 'date_from', 'date_to', 'per_page', 'paged'];
         foreach ($filter_keys as $key) {
             $value = isset($_POST[$key]) ? sanitize_text_field(wp_unslash($_POST[$key])) : '';
             if ($value !== '') {
@@ -247,6 +260,7 @@ class ACPDF_Routes {
         $hours_filter = isset($_GET['maint_hours']) ? preg_replace('/[^0-9]/', '', sanitize_text_field(wp_unslash($_GET['maint_hours']))) : '';
         $client_filter = isset($_GET['client']) ? trim(sanitize_text_field(wp_unslash($_GET['client']))) : '';
         $model_filter = isset($_GET['model']) ? trim(sanitize_text_field(wp_unslash($_GET['model']))) : '';
+        $seller_filter = isset($_GET['seller']) ? trim(sanitize_text_field(wp_unslash($_GET['seller']))) : '';
         $quote_filter = isset($_GET['quote']) ? trim(sanitize_text_field(wp_unslash($_GET['quote']))) : '';
         $date_from = isset($_GET['date_from']) ? sanitize_text_field(wp_unslash($_GET['date_from'])) : '';
         $date_to = isset($_GET['date_to']) ? sanitize_text_field(wp_unslash($_GET['date_to'])) : '';
@@ -264,6 +278,12 @@ class ACPDF_Routes {
             // Model filter
             $model = isset($entry['model']) ? (string)$entry['model'] : '';
             if ($model_filter !== '' && stripos($model, $model_filter) === false) continue;
+
+            $seller_name = trim((string)($entry['payload']['seller']['name'] ?? ''));
+            if ($seller_filter !== '') {
+                if ($seller_filter === '__none' && $seller_name !== '') continue;
+                if ($seller_filter !== '__none' && strcasecmp($seller_name, $seller_filter) !== 0) continue;
+            }
 
             // Quote filter
             $quote_no = isset($entry['quote_no']) ? (string)$entry['quote_no'] : '';

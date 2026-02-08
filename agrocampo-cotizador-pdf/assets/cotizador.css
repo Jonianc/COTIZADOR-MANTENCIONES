@@ -190,6 +190,12 @@ th {
 
 tbody tr:hover { background: #fafbfc; }
 
+.group-row td {
+  background: #f6f7f9;
+  font-weight: 600;
+  border-top: 2px solid var(--border);
+}
+
 /* Toolbar & Totals */
 .toolbar {
   display: flex;
