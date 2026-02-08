@@ -1,3 +1,8 @@
+
+## 1.3.5 (2026-02-05)
+- Agrega tipo de cotización Mantención/Reparación (reparación sin precarga).
+- Modo reparación: campos de falla/diagnóstico y costos (mano de obra, traslado, servicios externos) inyectados como líneas.
+- Modo manual en Set de horas: input de horas y ocultar Tipo mantención (horas).
 # Changelog
 
 ## 1.3.3

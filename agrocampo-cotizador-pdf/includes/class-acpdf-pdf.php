@@ -211,6 +211,56 @@ return $d.' de '.$mm.' del '.$y;
             ];
         }
 
+        // For reparación, inject additional cost lines into items (neto)
+        if (($payload['quote_type'] ?? '') === 'repair') {
+            $extra = [];
+
+            $lh = floatval($payload['labor_hours'] ?? 0);
+            $lr = floatval($payload['labor_rate'] ?? 0);
+            if ($lh > 0 && $lr > 0) {
+                $extra[] = [
+                    'n' => 'MO',
+                    'code' => '',
+                    'detail' => 'Mano de obra',
+                    'unit_price' => $lr,
+                    'unit' => 'HH',
+                    'discount' => 0,
+                    'qty' => $lh,
+                ];
+            }
+
+            $tr = floatval($payload['travel_amount'] ?? 0);
+            if ($tr > 0) {
+                $extra[] = [
+                    'n' => 'TR',
+                    'code' => '',
+                    'detail' => 'Traslado',
+                    'unit_price' => $tr,
+                    'unit' => 'UN',
+                    'discount' => 0,
+                    'qty' => 1,
+                ];
+            }
+
+            $ex = floatval($payload['external_amount'] ?? 0);
+            if ($ex > 0) {
+                $extra[] = [
+                    'n' => 'SE',
+                    'code' => '',
+                    'detail' => 'Servicios externos',
+                    'unit_price' => $ex,
+                    'unit' => 'UN',
+                    'discount' => 0,
+                    'qty' => 1,
+                ];
+            }
+
+            if (!empty($extra)) {
+                // Prepend extras preserving user items
+                $payload['items'] = array_merge($extra, $payload['items']);
+            }
+        }
+
         return $payload;
     }
 
@@ -327,7 +377,12 @@ return $d.' de '.$mm.' del '.$y;
 
     private static function build_pdf_bytes($payload, $quote_no, $show_codes) {
         $settings = ACPDF_Settings::get();
-        $title = trim(($payload['model'] ? $payload['model'].' ' : '') . 'MANTENCION ' . $payload['maint_hours'] . ' HORAS');
+        $qt = ($payload['quote_type'] ?? 'maintenance');
+        if ($qt === 'repair') {
+            $title = trim(($payload['model'] ? $payload['model'].' ' : '') . 'REPARACION');
+        } else {
+            $title = trim(($payload['model'] ? $payload['model'].' ' : '') . 'MANTENCION ' . $payload['maint_hours'] . ' HORAS');
+        }
 
         $pdf = new ACPDF_FPDF('P', 'mm', 'A4');
         $pdf->SetAutoPageBreak(true, 16);
@@ -663,7 +718,7 @@ return $d.' de '.$mm.' del '.$y;
             'created_at' => current_time('mysql'),
             'quote_no' => $quote_no,
             'date_iso' => $payload['date_iso'],
-            'maint_hours' => $payload['maint_hours'],
+            'maint_hours' => ($payload['maint_hours'] ?? ''),
             'model' => $payload['model'],
             'client' => $payload['client'],
             'parts_type' => $payload['parts_type'],

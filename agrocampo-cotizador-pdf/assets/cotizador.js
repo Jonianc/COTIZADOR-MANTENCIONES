@@ -18,9 +18,17 @@ const elModel    = id('acpdf-model');
 const elTitle    = id('acpdf-title');
 const elBrand    = id('acpdf-brand');
 const elTpl      = id('acpdf-template');
+const elQuoteType = id('acpdf-quote-type');
+const elHoursSetWrap = id('acpdf-hours-set-wrap');
+const elHoursWrap = id('acpdf-hours-wrap');
+const elHoursManual = id('acpdf-hours-manual');
+const elHoursManualHelp = id('acpdf-hours-manual-help');
+const repairWrap = id('acpdf-repair-wrap');
+
 const tbody      = document.querySelector('#acpdf-items tbody');
 
 if (!elForm || !elHoursSet || !elHours || !elModel || !elTitle || !elBrand || !elTpl || !tbody) return;
+
 
 // ============ HELPERS ============
 function fmtCLP(n) {
@@ -198,12 +206,113 @@ createAutosaveIndicator();
 // ============ TITLE UPDATE ============
 function updateTitle() {
   const m = (elModel.value || '').trim();
+  const qt = (elQuoteType && elQuoteType.value) ? String(elQuoteType.value) : 'maintenance';
+  if (qt === 'repair') {
+    elTitle.value = ((m ? (m + ' ') : '') + 'REPARACION').trim();
+    return;
+  }
   const h = (elHours.value || '').trim();
   elTitle.value = ((m ? (m + ' ') : '') + 'MANTENCION ' + h + ' HORAS').trim();
 }
 
+
+function isRepairMode() {
+  return (elQuoteType && String(elQuoteType.value || '') === 'repair');
+}
+
+function setQuoteTypeUI() {
+  const repair = isRepairMode();
+
+  // Toggle blocks
+  $$('.acpdf-only-repair').forEach(el => el.classList.toggle('hidden', !repair));
+  $$('.acpdf-only-maint').forEach(el => el.classList.toggle('hidden', repair));
+
+  if (repair) {
+    // Force no template/precarga
+    if (elTpl) elTpl.value = '';
+    activeBrandKey = '';
+    activeTemplateKey = '';
+
+    // Disable template controls
+    if (elBrand) elBrand.disabled = true;
+    if (elTpl) elTpl.disabled = true;
+
+    // Also disable hours controls (they're hidden anyway)
+    if (elHoursSet) elHoursSet.disabled = true;
+
+    // Keep maint_hours select value but not used
+    updateTitle();
+  } else {
+    if (elBrand) elBrand.disabled = false;
+    if (elTpl) elTpl.disabled = false;
+    // Hours-set is enabled unless template is active
+    if (!String(elTpl.value || '').trim()) {
+      elHoursSet.disabled = false;
+    }
+    refreshHoursSetManualOption();
+    fillHours();
+  }
+  triggerAutosave();
+}
+
+function refreshHoursSetManualOption() {
+  if (!elHoursSet) return;
+  const tplKey = String(elTpl?.value || '').trim();
+  const hasTemplate = !!tplKey;
+
+  // Ensure MANUAL option exists
+  let opt = elHoursSet.querySelector('option[value="MANUAL"]');
+  if (!opt) {
+    opt = document.createElement('option');
+    opt.value = 'MANUAL';
+    opt.textContent = 'Manual';
+    elHoursSet.appendChild(opt);
+  }
+
+  // Manual only when no precarga (no template) and not repair
+  const allowManual = (!hasTemplate) && !isRepairMode();
+  opt.disabled = !allowManual;
+  opt.hidden = !allowManual;
+
+  // If manual becomes unavailable while selected, fall back to A
+  if (!allowManual && elHoursSet.value === 'MANUAL') {
+    elHoursSet.value = 'A';
+  }
+}
+
+function setManualHoursUI() {
+  const isManual = (String(elHoursSet.value || '') === 'MANUAL');
+  if (!elHoursManual || !elHoursManualHelp) return;
+
+  elHoursManual.classList.toggle('hidden', !isManual);
+  elHoursManualHelp.classList.toggle('hidden', !isManual);
+
+  // Hide hours dropdown when manual
+  if (elHoursWrap) elHoursWrap.classList.toggle('hidden', isManual);
+
+  if (isManual) {
+    const v = String(elHoursManual.value || '').replace(/[^0-9]/g,'');
+    const val = v ? Number(v) : 0;
+    if (val > 0) {
+      elHours.innerHTML = '<option value="' + val + '">' + val + '</option>';
+      elHours.value = String(val);
+    } else {
+      elHours.innerHTML = '<option value="">—</option>';
+      elHours.value = '';
+    }
+  } else {
+    if (elHoursWrap) elHoursWrap.classList.remove('hidden');
+  }
+  updateTitle();
+}
+
 // ============ HOURS DROPDOWN ============
 function fillHours() {
+  refreshHoursSetManualOption();
+  if (String(elHoursSet.value || '') === 'MANUAL') {
+    setManualHoursUI();
+    return;
+  }
   const t = getActiveTemplate();
   const list = (t && t.hours && t.hours.length) ? t.hours : (HOURS_SETS[elHoursSet.value] || HOURS_SETS.A);
   const cur = elHours.value;
@@ -361,6 +470,9 @@ function applyTemplate(brandKey, tplKey) {
 
   // While a template is active, hours-set is controlled by the template
   elHoursSet.disabled = true;
+  refreshHoursSetManualOption();
+  if (elHoursManual) elHoursManual.value = '';
+  if (elHoursWrap) elHoursWrap.classList.remove('hidden');
 
   fillBrandOptions();
 fillTemplateOptions();
@@ -477,11 +589,19 @@ function applyPrefill(d) {
   setField('email', d.email);
   setField('model', d.model);
   setField('location', d.location);
+  setField('quote_type', d.quote_type);
   setField('brand_key', d.brand_key);
   setField('template_key', d.template_key);
   setField('hours_set', d.hours_set);
+  setField('hours_manual', d.hours_manual);
   setField('maint_hours', d.maint_hours);
   setField('parts_type', d.parts_type);
+  setField('repair_issue', d.repair_issue);
+  setField('repair_diagnosis', d.repair_diagnosis);
+  setField('labor_hours', d.labor_hours);
+  setField('labor_rate', d.labor_rate);
+  setField('travel_amount', d.travel_amount);
+  setField('external_amount', d.external_amount);
   setField('observations', d.observations);
 
 
@@ -597,10 +717,18 @@ function getFormData() {
     phone: document.querySelector('[name="phone"]')?.value || '',
     email: document.querySelector('[name="email"]')?.value || '',
     model: document.querySelector('[name="model"]')?.value || '',
+    quote_type: document.querySelector('[name="quote_type"]')?.value || 'maintenance',
+    repair_issue: document.querySelector('[name="repair_issue"]')?.value || '',
+    repair_diagnosis: document.querySelector('[name="repair_diagnosis"]')?.value || '',
+    labor_hours: document.querySelector('[name="labor_hours"]')?.value || '',
+    labor_rate: document.querySelector('[name="labor_rate"]')?.value || '',
+    travel_amount: document.querySelector('[name="travel_amount"]')?.value || '',
+    external_amount: document.querySelector('[name="external_amount"]')?.value || '',
     brand_key: elBrand.value || '',
     template_key: elTpl.value || '',
     location: document.querySelector('[name="location"]')?.value || '',
     hours_set: elHoursSet.value,
+    hours_manual: document.querySelector('[name="hours_manual"]')?.value || '',
     maint_hours: elHours.value,
     parts_type: document.querySelector('[name="parts_type"]')?.value || 'ORIGINALES',
     observations: document.querySelector('[name="observations"]')?.value || '',
@@ -724,6 +852,12 @@ elBrand.addEventListener('change', () => {
 });
 
 
+if (elQuoteType) {
+  elQuoteType.addEventListener('change', () => {
+    setQuoteTypeUI();
+  });
+}
+
 elModel.addEventListener('input', () => {
   updateTitle();
   triggerAutosave();
@@ -736,6 +870,7 @@ if (elTpl) {
       activeBrandKey = '';
       activeTemplateKey = '';
       elHoursSet.disabled = false;
+      refreshHoursSetManualOption();
       fillHours();
       triggerAutosave();
       return;
