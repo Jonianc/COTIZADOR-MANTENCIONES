@@ -1,4 +1,7 @@
 
+## 1.3.9 (2026-02-08)
+- Incluye tipo de cotización reparación y campos asociados en el PDF.
+
 ## 1.3.8 (2026-02-08)
 - Corrige watermark para que no altere el flujo de la tabla en PDF.
 

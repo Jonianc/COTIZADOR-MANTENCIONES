@@ -119,6 +119,14 @@ return $d.' de '.$mm.' del '.$y;
         $internal_no = preg_replace('/[^0-9]/', '', $get('internal_no', ''));
         $serial_no = preg_replace('/[^a-zA-Z0-9-]/', '', $get('serial_no', ''));
 
+        $quote_type = ($get('quote_type', 'maintenance') === 'repair') ? 'repair' : 'maintenance';
+
+        $repair_issue = trim(wp_kses_post(wp_unslash($post['repair_issue'] ?? '')));
+        $repair_diagnosis = trim(wp_kses_post(wp_unslash($post['repair_diagnosis'] ?? '')));
+        $labor_hours = self::parse_float($get('labor_hours', ''));
+        $labor_rate = self::parse_money($get('labor_rate', ''));
+        $travel_amount = self::parse_money($get('travel_amount', ''));
+        $external_amount = self::parse_money($get('external_amount', ''));
 
         // Seller selection (multi-seller). Fallback to legacy settings.
         $seller_id = $get('seller_id', '');
@@ -156,6 +164,7 @@ return $d.' de '.$mm.' del '.$y;
             'model' => $get('model', ''),
             'location' => $get('location', ''),
             'maint_hours' => $maint_hours,
+            'quote_type' => $quote_type,
             'parts_type' => ($get('parts_type', 'ORIGINALES') === 'ALTERNATIVOS') ? 'ALTERNATIVOS' : 'ORIGINALES',
             'observations' => trim(wp_kses_post(wp_unslash($post['observations'] ?? ''))),
             'iva_percent' => floatval($settings['default_iva_percent']),
@@ -171,6 +180,12 @@ return $d.' de '.$mm.' del '.$y;
                 'name' => $settings['company_name'],
                 'rut' => $settings['company_rut'],
             ],
+            'repair_issue' => $repair_issue,
+            'repair_diagnosis' => $repair_diagnosis,
+            'labor_hours' => $labor_hours,
+            'labor_rate' => $labor_rate,
+            'travel_amount' => $travel_amount,
+            'external_amount' => $external_amount,
             'items' => [],
         ];
 
