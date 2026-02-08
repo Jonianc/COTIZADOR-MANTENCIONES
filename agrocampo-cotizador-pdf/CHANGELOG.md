@@ -1,4 +1,7 @@
 
+## 1.3.8 (2026-02-08)
+- Corrige watermark para que no altere el flujo de la tabla en PDF.
+
 ## 1.3.7 (2026-02-08)
 - Mejora UX/UI del formulario con secciones, ayudas y placeholders.
 - Validaciones más claras con mensajes en campo y resumen de errores.

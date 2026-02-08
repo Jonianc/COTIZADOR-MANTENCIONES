@@ -676,11 +676,14 @@ return $d.' de '.$mm.' del '.$y;
         if (($payload['parts_type'] ?? '') === 'ALTERNATIVOS') {
             return;
         }
+        $prevX = $pdf->GetX();
+        $prevY = $pdf->GetY();
         $pdf->SetTextColor(235,235,235);
         $pdf->SetFont('Times','B',30);
         $pdf->SetXY(0, 150);
-        $pdf->Cell(210, 14, self::to_pdf_text('REPUESTOS 100% ORIGINALES'), 0, 1, 'C');
+        $pdf->Cell(210, 14, self::to_pdf_text('REPUESTOS 100% ORIGINALES'), 0, 0, 'C');
         $pdf->SetTextColor(0,0,0);
+        $pdf->SetXY($prevX, $prevY);
     }
 
     public static function get_quote_log() {
