@@ -1,4 +1,7 @@
 
+## 1.3.11 (2026-02-08)
+- Actualiza el título del PDF al escribir horas manuales.
+
 ## 1.3.10 (2026-02-08)
 - Agrega filtro por vendedor y agrupación visual en el gestor.
 

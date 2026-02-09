@@ -916,6 +916,14 @@ elHoursSet.addEventListener('change', () => {
   triggerAutosave();
 });
 
+if (elHoursManual) {
+  elHoursManual.addEventListener('input', () => {
+    if (String(elHoursSet.value || '') !== 'MANUAL') return;
+    setManualHoursUI();
+    triggerAutosave();
+  });
+}
+
 elHours.addEventListener('change', () => {
   updateTitle();
   if (activeTemplateKey) rebuildTemplateForHour();
