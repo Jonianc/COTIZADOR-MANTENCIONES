@@ -94,10 +94,11 @@ function resolveQtyForHour(qtyMap, hour) {
 }
 
 // ============ HOURS SETS ============
-const HOURS_SETS = {
+const BASE_HOURS_SETS = {
   A: [100, 400, 800, 1200],
   B: [100, 500, 1000, 1500]
 };
+const TEMPLATE_HOURS_SET = 'TEMPLATE';
 
 // ============ TEMPLATES ============
 const CATALOG = (window.ACPDF_TEMPLATES && window.ACPDF_TEMPLATES.brands) ? window.ACPDF_TEMPLATES.brands : {};
@@ -277,11 +278,38 @@ function setQuoteTypeUI() {
   triggerAutosave();
 }
 
+
+function refreshHoursSetOptions() {
+  if (!elHoursSet) return;
+  const t = getActiveTemplate();
+  const hasTemplateHours = !!(t && Array.isArray(t.hours) && t.hours.length);
+
+  const previous = String(elHoursSet.value || '').trim();
+  const options = [];
+
+  if (hasTemplateHours) {
+    options.push({
+      value: TEMPLATE_HOURS_SET,
+      label: t.hours.join(' - ')
+    });
+  } else {
+    options.push({ value: 'A', label: '100 - 400 - 800 - 1200' });
+    options.push({ value: 'B', label: '100 - 500 - 1000 - 1500' });
+  }
+
+  elHoursSet.innerHTML = options.map(o => '<option value="' + o.value + '">' + o.label + '</option>').join('');
+
+  if (options.some(o => o.value === previous)) {
+    elHoursSet.value = previous;
+  } else if (hasTemplateHours) {
+    elHoursSet.value = TEMPLATE_HOURS_SET;
+  } else {
+    elHoursSet.value = 'A';
+  }
+}
+
 function refreshHoursSetManualOption() {
   if (!elHoursSet) return;
-  const tplKey = String(elTpl?.value || '').trim();
-  const hasTemplate = !!tplKey;
-
   // Ensure MANUAL option exists
   let opt = elHoursSet.querySelector('option[value="MANUAL"]');
   if (!opt) {
@@ -297,9 +325,9 @@ function refreshHoursSetManualOption() {
   opt.disabled = !allowManual;
   opt.hidden = !allowManual;
 
-  // If manual becomes unavailable while selected, fall back to A
+  // If manual becomes unavailable while selected, fall back to available option
   if (!allowManual && elHoursSet.value === 'MANUAL') {
-    elHoursSet.value = 'A';
+    elHoursSet.value = elHoursSet.querySelector('option[value="' + TEMPLATE_HOURS_SET + '"]') ? TEMPLATE_HOURS_SET : 'A';
   }
 }
 
@@ -331,13 +359,17 @@ function setManualHoursUI() {
 
 // ============ HOURS DROPDOWN ============
 function fillHours() {
+  refreshHoursSetOptions();
   refreshHoursSetManualOption();
   if (String(elHoursSet.value || '') === 'MANUAL') {
     setManualHoursUI();
     return;
   }
   const t = getActiveTemplate();
-  const list = (t && t.hours && t.hours.length) ? t.hours : (HOURS_SETS[elHoursSet.value] || HOURS_SETS.A);
+  const selectedSet = String(elHoursSet.value || '').trim();
+  const list = (selectedSet === TEMPLATE_HOURS_SET && t && t.hours && t.hours.length)
+    ? t.hours
+    : (BASE_HOURS_SETS[selectedSet] || BASE_HOURS_SETS.A);
   const cur = elHours.value;
 
   elHours.innerHTML = list.map(n => '<option value="' + n + '">' + n + '</option>').join('');

@@ -1,3 +1,7 @@
+## 1.3.14 (2026-02-10)
+- Actualiza el selector "Set de horas" para que refleje las horas de la pauta del tractor seleccionado.
+- Mantiene opción Manual en mantención y conserva fallback compatible cuando no hay pauta activa.
+
 ## 1.3.13 (2026-02-10)
 - Agrega importador versionado en `tools/import_pautas_mf.py` para auditar/re-ejecutar extracción desde `PAUTAS MF.pdf`.
 - Agrega documentación de uso en `tools/README.md` y ejemplo de mapping manual.
