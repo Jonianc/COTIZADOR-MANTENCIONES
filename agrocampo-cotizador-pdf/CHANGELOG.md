@@ -1,3 +1,11 @@
+## 1.3.13 (2026-02-10)
+- Agrega importador versionado en `tools/import_pautas_mf.py` para auditar/re-ejecutar extracción desde `PAUTAS MF.pdf`.
+- Agrega documentación de uso en `tools/README.md` y ejemplo de mapping manual.
+
+## 1.3.12 (2026-02-10)
+- Habilita modo Manual de horas incluso con pauta activa para cotizar mantenciones fuera de los sets A/B.
+- Ajusta la lógica de cantidad por ítem para reutilizar la frecuencia inferior más cercana cuando la hora manual no existe en la pauta.
+
 
 ## 1.3.11 (2026-02-08)
 - Actualiza el título del PDF al escribir horas manuales.

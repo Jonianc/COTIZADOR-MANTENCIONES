@@ -71,6 +71,28 @@ function escapeHtml(str) {
   return div.innerHTML;
 }
 
+function resolveQtyForHour(qtyMap, hour) {
+  if (!qtyMap || typeof qtyMap !== 'object') return 0;
+  const h = Number(hour || 0);
+  if (!Number.isFinite(h) || h <= 0) return 0;
+
+  if (Object.prototype.hasOwnProperty.call(qtyMap, h)) {
+    return Number(qtyMap[h] || 0);
+  }
+
+  const keys = Object.keys(qtyMap)
+    .map(Number)
+    .filter(n => Number.isFinite(n) && n > 0)
+    .sort((a, b) => a - b);
+
+  if (!keys.length) return 0;
+
+  // Prefer nearest lower (most common maintenance policy). If none exists, fallback to first available.
+  const lowerOrEqual = keys.filter(n => n <= h);
+  const picked = lowerOrEqual.length ? lowerOrEqual[lowerOrEqual.length - 1] : keys[0];
+  return Number(qtyMap[picked] || 0);
+}
+
 // ============ HOURS SETS ============
 const HOURS_SETS = {
   A: [100, 400, 800, 1200],
@@ -269,8 +291,9 @@ function refreshHoursSetManualOption() {
     elHoursSet.appendChild(opt);
   }
 
-  // Manual only when no precarga (no template) and not repair
-  const allowManual = (!hasTemplate) && !isRepairMode();
+  // Manual is available in maintenance mode, even with template,
+  // to support full hour ranges beyond fixed sets.
+  const allowManual = !isRepairMode();
   opt.disabled = !allowManual;
   opt.hidden = !allowManual;
 
@@ -468,8 +491,8 @@ function applyTemplate(brandKey, tplKey) {
   const tk = activeTplKey();
   TEMPLATE_EDITS.set(tk, new Map());
 
-  // While a template is active, hours-set is controlled by the template
-  elHoursSet.disabled = true;
+  // Keep hours-set enabled so user can switch to Manual hours when needed.
+  elHoursSet.disabled = false;
   refreshHoursSetManualOption();
   if (elHoursManual) elHoursManual.value = '';
   if (elHoursWrap) elHoursWrap.classList.remove('hidden');
@@ -494,7 +517,7 @@ fillHours();
 
   const h = Number(elHours.value || 0);
   (t.items || []).forEach(it => {
-    const qty = Number((it.qty && Object.prototype.hasOwnProperty.call(it.qty, h)) ? it.qty[h] : 0);
+    const qty = resolveQtyForHour(it.qty, h);
     if (qty > 0) {
       const itemId = tplItemId(it);
       addRow({
@@ -543,7 +566,7 @@ function rebuildTemplateForHour() {
   extraRows.forEach(tr => tr.remove());
 
   (t.items || []).forEach(it => {
-    const qty = Number((it.qty && Object.prototype.hasOwnProperty.call(it.qty, h)) ? it.qty[h] : 0);
+    const qty = resolveQtyForHour(it.qty, h);
     if (qty <= 0) return;
 
     const itemId = tplItemId(it);
