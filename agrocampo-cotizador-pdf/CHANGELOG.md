@@ -1,3 +1,7 @@
+## 1.3.15 (2026-02-11)
+- Con pauta activa, el selector de horas respeta el rango definido por cada pauta (evita mostrar horas fuera de alcance del modelo).
+- Corrige la incoherencia en Serie 7S (ej. MF7S-155T4K_CL): ya no se extiende a 2000/4800 cuando la pauta llega hasta 1500, y aplica el mismo criterio al resto de modelos con pauta.
+
 
 ## 1.3.14 (2026-02-10)
 - "Cantidad por Máquina" en PDF interno: columnas completas según set A/B (desde 100h; sin 10/50).

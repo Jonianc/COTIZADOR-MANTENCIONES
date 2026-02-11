@@ -180,9 +180,10 @@ function getActiveTemplate(){
   const raw = b.templates[activeTemplateKey];
   if (!raw) return null;
 
-  // Horas disponibles: en Massey Ferguson se rige por el set A/B (incluye 10/50 para mantenciones)
+  // Con pauta activa, respetar el rango horario de la pauta para mantener coherencia de precarga.
+  // Solo si la pauta no trae horas se usa el set A/B seleccionado.
   let hours = Array.isArray(raw.hours) ? raw.hours.map(Number).filter(n => Number.isFinite(n)).sort((a,b)=>a-b) : [];
-  if (String(activeBrandKey) === 'massey_ferguson') {
+  if (!hours.length) {
     const setKey = String(elHoursSet?.value || 'A');
     const k = Object.prototype.hasOwnProperty.call(HOURS_SETS, setKey) ? setKey : 'A';
     hours = HOURS_SETS[k].slice();
