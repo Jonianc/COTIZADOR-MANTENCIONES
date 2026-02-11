@@ -1,3 +1,7 @@
+## 1.3.16 (2026-02-11)
+- Ajusta pauta MF Serie 7S para usar rango completo del set de horas seleccionado (100 a 5000 en Set B), manteniendo precarga y cálculo de ítems por frecuencia.
+- Revierte el recorte por `raw.hours` en MF que ocultaba horas válidas como 2000+ y podía aparentar falta de ítems.
+
 ## 1.3.15 (2026-02-11)
 - Con pauta activa, el selector de horas respeta el rango definido por cada pauta (evita mostrar horas fuera de alcance del modelo).
 - Corrige la incoherencia en Serie 7S (ej. MF7S-155T4K_CL): ya no se extiende a 2000/4800 cuando la pauta llega hasta 1500, y aplica el mismo criterio al resto de modelos con pauta.
