@@ -73,9 +73,98 @@ function escapeHtml(str) {
 
 // ============ HOURS SETS ============
 const HOURS_SETS = {
-  A: [100, 400, 800, 1200],
-  B: [100, 500, 1000, 1500]
+  // Set A: 10/50/100 y luego cada 400 hasta 4800
+  A: [10, 50, 100, 400, 800, 1200, 1600, 2000, 2400, 2800, 3200, 3600, 4000, 4400, 4800],
+  // Set B: 10/50/100 y luego 500/1000/1500 y tramos hasta 5000
+  B: [10, 50, 100, 500, 1000, 1500, 2000, 2500, 3000, 3500, 4000, 4500, 5000]
 };
+
+// Hours used for "Cantidad por Máquina" (reference PDF): desde 100h (sin 10/50)
+const QTY_MACHINE_HOURS_BY_SET = {
+  A: HOURS_SETS.A.filter(h => Number(h) >= 100),
+  B: HOURS_SETS.B.filter(h => Number(h) >= 100)
+};
+
+function uniqSorted(nums){
+  const set = new Set();
+  (nums || []).forEach(n => {
+    const v = Number(n);
+    if (Number.isFinite(v)) set.add(v);
+  });
+  return [...set].sort((a,b)=>a-b);
+}
+
+function parseFreqSpec(freqStr){
+  const s = String(freqStr || '').trim();
+  const m = s.match(/\d+/g);
+  if (!m || !m.length) return { every: null, first: null };
+  const nums = m.map(x => Number(x)).filter(n => Number.isFinite(n) && n > 0);
+  if (!nums.length) return { every: null, first: null };
+  if (nums.length >= 2) return { every: nums[0], first: nums[1] };
+  return { every: nums[0], first: null };
+}
+
+function expandQtyMap(qtyObj, freqStr, hoursList){
+  const out = {};
+  const src = (qtyObj && typeof qtyObj === 'object') ? qtyObj : {};
+  // Normalize existing mapping to numbers
+  const existing = {};
+  Object.keys(src).forEach(k => {
+    const hk = Number(k);
+    const v = Number(src[k]);
+    if (Number.isFinite(hk) && Number.isFinite(v)) existing[hk] = v;
+  });
+
+  const nonZero = Object.keys(existing)
+    .map(k => [Number(k), Number(existing[k])])
+    .filter(([h,v]) => Number.isFinite(h) && Number.isFinite(v) && v > 0)
+    .sort((a,b)=>a[0]-b[0]);
+
+  const baseQty = nonZero.length ? Math.max(...nonZero.map(([,v])=>v)) : 0;
+  const firstNonZeroHour = nonZero.length ? nonZero[0][0] : null;
+
+  const spec = parseFreqSpec(freqStr);
+  let every = spec.every;
+  let first = spec.first;
+  if (!every || every <= 0) {
+    // No reliable frequency: keep existing values only
+    (hoursList || []).forEach(h => {
+      const hh = Number(h);
+      out[hh] = (Object.prototype.hasOwnProperty.call(existing, hh)) ? existing[hh] : 0;
+    });
+    return out;
+  }
+
+  // If we don't have any known non-zero quantity, don't invent it.
+  if (!baseQty || baseQty <= 0) {
+    (hoursList || []).forEach(h => {
+      const hh = Number(h);
+      out[hh] = (Object.prototype.hasOwnProperty.call(existing, hh)) ? existing[hh] : 0;
+    });
+    return out;
+  }
+
+  // Decide start: explicit first OR the first non-zero hour OR the period itself
+  const start = (first && first > 0) ? first : (firstNonZeroHour || every);
+  const qtyOnService = baseQty;
+
+  (hoursList || []).forEach(h => {
+    const hh = Number(h);
+    if (!Number.isFinite(hh)) return;
+    let v = 0;
+    if (hh === start) {
+      v = qtyOnService;
+    } else if (hh >= every && (hh % every) === 0) {
+      v = qtyOnService;
+    } else if (Object.prototype.hasOwnProperty.call(existing, hh)) {
+      // Respect explicit mapping if present
+      v = existing[hh];
+    }
+    out[hh] = v;
+  });
+
+  return out;
+}
 
 // ============ TEMPLATES ============
 const CATALOG = (window.ACPDF_TEMPLATES && window.ACPDF_TEMPLATES.brands) ? window.ACPDF_TEMPLATES.brands : {};
@@ -91,14 +180,26 @@ function getActiveTemplate(){
   const raw = b.templates[activeTemplateKey];
   if (!raw) return null;
 
-  const hours = Array.isArray(raw.hours) ? raw.hours.map(Number).filter(n => Number.isFinite(n)).sort((a,b)=>a-b) : [];
-  const items = Array.isArray(raw.items) ? raw.items.map(it => ({
+  // Horas disponibles: en Massey Ferguson se rige por el set A/B (incluye 10/50 para mantenciones)
+  let hours = Array.isArray(raw.hours) ? raw.hours.map(Number).filter(n => Number.isFinite(n)).sort((a,b)=>a-b) : [];
+  if (String(activeBrandKey) === 'massey_ferguson') {
+    const setKey = String(elHoursSet?.value || 'A');
+    const k = Object.prototype.hasOwnProperty.call(HOURS_SETS, setKey) ? setKey : 'A';
+    hours = HOURS_SETS[k].slice();
+  }
+
+  const items = Array.isArray(raw.items) ? raw.items.map(it => {
+    const freq = it.frequency || it.freq || '';
+    const qtyRaw = it.qty || {};
+    const qty = expandQtyMap(qtyRaw, freq, hours);
+    return {
     desc: it.description || it.desc || '',
     part: it.part || '',
     unit: it.um || it.unit || '',
-    freq: it.frequency || it.freq || '',
-    qty: it.qty || {}
-  })) : [];
+    freq,
+    qty
+  };
+  }) : [];
 
   return { label: raw.label || activeTemplateKey, hours, items };
 }
@@ -468,8 +569,8 @@ function applyTemplate(brandKey, tplKey) {
   const tk = activeTplKey();
   TEMPLATE_EDITS.set(tk, new Map());
 
-  // While a template is active, hours-set is controlled by the template
-  elHoursSet.disabled = true;
+  // Con pauta activa: A/B sigue disponible; Manual no.
+  elHoursSet.disabled = false;
   refreshHoursSetManualOption();
   if (elHoursManual) elHoursManual.value = '';
   if (elHoursWrap) elHoursWrap.classList.remove('hidden');
@@ -906,13 +1007,9 @@ tbody.addEventListener('input', () => {
 });
 
 elHoursSet.addEventListener('change', () => {
-  if (activeTemplateKey) {
-    activeBrandKey = '';
-    activeTemplateKey = '';
-    elHoursSet.disabled = false;
-    if (elTpl) elTpl.value = '';
-  }
+  refreshHoursSetManualOption();
   fillHours();
+  if (activeTemplateKey) rebuildTemplateForHour();
   triggerAutosave();
 });
 

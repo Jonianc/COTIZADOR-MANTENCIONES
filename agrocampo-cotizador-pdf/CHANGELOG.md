@@ -1,4 +1,12 @@
 
+## 1.3.14 (2026-02-10)
+- "Cantidad por Máquina" en PDF interno: columnas completas según set A/B (desde 100h; sin 10/50).
+- Set de horas A/B ahora aplica incluso con pauta activa (no se desactiva el selector).
+- Set B incluye 10/50 en el selector de horas (como en pautas MF).
+
+## 1.3.12 (2026-02-10)
+- Completa los sets de horas (incluye 10/50 y rangos hasta 4800/5000 según set).
+
 ## 1.3.11 (2026-02-08)
 - Actualiza el título del PDF al escribir horas manuales.
 

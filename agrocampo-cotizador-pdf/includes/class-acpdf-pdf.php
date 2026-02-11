@@ -3,6 +3,212 @@ if (!defined('ABSPATH')) { exit; }
 
 class ACPDF_PDF {
 
+    private static function qty_machine_hours(string $hours_set = 'B') : array {
+        // Reference sets for "Cantidad por Máquina" (Massey Ferguson): desde 100h (sin 10/50)
+        $hours_set = sanitize_key($hours_set);
+        if ($hours_set === 'A') {
+            return [100, 400, 800, 1200, 1600, 2000, 2400, 2800, 3200, 3600, 4000, 4400, 4800];
+        }
+        // Default B
+        return [100, 500, 1000, 1500, 2000, 2500, 3000, 3500, 4000, 4500, 5000];
+    }
+
+    private static function parse_freq_spec($freq) : array {
+        $s = is_string($freq) ? trim($freq) : strval($freq);
+        if ($s === '') return ['every' => null, 'first' => null];
+        if (!preg_match_all('/(\d+)/', $s, $m) || empty($m[1])) {
+            return ['every' => null, 'first' => null];
+        }
+        $nums = array_values(array_filter(array_map('intval', $m[1]), function($n){ return $n > 0; }));
+        if (empty($nums)) return ['every' => null, 'first' => null];
+        if (count($nums) >= 2) return ['every' => $nums[0], 'first' => $nums[1]];
+        return ['every' => $nums[0], 'first' => null];
+    }
+
+    private static function expand_qty_map(array $qty, $freq, array $hours) : array {
+        // Normalize existing mapping
+        $existing = [];
+        foreach ($qty as $k => $v) {
+            $hk = intval($k);
+            $vv = is_numeric($v) ? floatval($v) : 0;
+            $existing[$hk] = $vv;
+        }
+
+        $nonzero = [];
+        foreach ($existing as $h => $v) {
+            if ($v > 0) $nonzero[$h] = $v;
+        }
+        ksort($nonzero);
+
+        $baseQty = !empty($nonzero) ? max(array_values($nonzero)) : 0;
+        $firstNonZeroHour = !empty($nonzero) ? intval(array_key_first($nonzero)) : null;
+
+        $spec = self::parse_freq_spec($freq);
+        $every = $spec['every'];
+        $first = $spec['first'];
+
+        $out = [];
+
+        if (!$every || $every <= 0) {
+            foreach ($hours as $hh) {
+                $hh = intval($hh);
+                $out[$hh] = isset($existing[$hh]) ? $existing[$hh] : 0;
+            }
+            return $out;
+        }
+
+        // If we don't have any known non-zero quantity, don't invent it.
+        if ($baseQty <= 0) {
+            foreach ($hours as $hh) {
+                $hh = intval($hh);
+                $out[$hh] = isset($existing[$hh]) ? $existing[$hh] : 0;
+            }
+            return $out;
+        }
+
+        $start = ($first && $first > 0) ? intval($first) : ( ($firstNonZeroHour !== null) ? intval($firstNonZeroHour) : intval($every) );
+        $qtyOnService = ($baseQty > 0) ? $baseQty : 0;
+
+        foreach ($hours as $hh) {
+            $hh = intval($hh);
+            $v = 0;
+            if ($hh === $start) {
+                $v = $qtyOnService;
+            } elseif ($hh >= $every && ($hh % $every) === 0) {
+                $v = $qtyOnService;
+            } elseif (isset($existing[$hh])) {
+                $v = $existing[$hh];
+            }
+            $out[$hh] = $v;
+        }
+
+        return $out;
+    }
+
+    private static function template_from_catalog(string $brand_key, string $template_key) : ?array {
+        if ($brand_key === '' || $template_key === '') return null;
+        $cat = ACPDF_Templates::catalog();
+        $b = $cat['brands'][$brand_key] ?? null;
+        if (!is_array($b) || empty($b['templates']) || !is_array($b['templates'])) return null;
+        $t = $b['templates'][$template_key] ?? null;
+        if (!is_array($t)) return null;
+        return $t;
+    }
+
+    private static function build_qty_machine_matrix(array $payload) : ?array {
+        if (($payload['quote_type'] ?? '') !== 'maintenance') return null;
+        $brand = sanitize_key($payload['brand_key'] ?? '');
+        $tpl   = sanitize_key($payload['template_key'] ?? '');
+        if ($brand !== 'massey_ferguson' || $tpl === '') return null;
+
+        $raw = self::template_from_catalog($brand, $tpl);
+        if (!$raw) return null;
+
+        $hours_set = sanitize_key($payload['hours_set'] ?? 'B');
+        if ($hours_set === 'MANUAL') $hours_set = 'B';
+        $hours = self::qty_machine_hours($hours_set);
+        $rows = [];
+
+        $items = $raw['items'] ?? [];
+        if (!is_array($items) || empty($items)) return null;
+
+        foreach ($items as $it) {
+            if (!is_array($it)) continue;
+            $desc = (string)($it['description'] ?? ($it['desc'] ?? ''));
+            $freq = (string)($it['frequency'] ?? ($it['freq'] ?? ''));
+            $qty  = is_array($it['qty'] ?? null) ? $it['qty'] : [];
+
+            $map = self::expand_qty_map($qty, $freq, $hours);
+            $has = false;
+            foreach ($map as $v) { if (floatval($v) > 0) { $has = true; break; } }
+            if (!$has) continue;
+
+            $rows[] = [
+                'label' => $desc,
+                'qty' => $map,
+            ];
+        }
+
+        if (empty($rows)) return null;
+        return [ 'hours' => $hours, 'rows' => $rows ];
+    }
+
+    private static function fit_text($pdf, $w, $text) {
+        $t = self::to_pdf_text($text);
+        if ($pdf->GetStringWidth($t) <= $w) return $t;
+        $ell = '...';
+        $max = max(1, strlen($t));
+        for ($i = $max; $i > 0; $i--) {
+            $cand = substr($t, 0, $i) . $ell;
+            if ($pdf->GetStringWidth($cand) <= $w) return $cand;
+        }
+        return substr($t, 0, 1) . $ell;
+    }
+
+    private static function render_qty_machine_table($pdf, array $matrix, array $payload) {
+        $hours = $matrix['hours'] ?? [];
+        $rows  = $matrix['rows'] ?? [];
+        if (empty($hours) || empty($rows)) return;
+
+        $leftX = 12;
+        $pageBottom = $pdf->GetPageHeight() - 16;
+
+        $nameW = 62;
+        $hourW = (186 - $nameW) / max(1, count($hours));
+        $rowH = 5.0;
+        $headH = 6.0;
+
+        $drawHeader = function() use ($pdf, $leftX, $nameW, $hourW, $hours, $headH) {
+            $pdf->SetFont('Times','B',9);
+            $pdf->SetFillColor(230,230,230);
+            $pdf->SetX($leftX);
+            $pdf->Cell($nameW, $headH, self::to_pdf_text('Cantidad por Maquina'), 1, 0, 'L', true);
+            foreach ($hours as $h) {
+                $pdf->Cell($hourW, $headH, self::to_pdf_text((string)intval($h)), 1, 0, 'C', true);
+            }
+            $pdf->Ln();
+            $pdf->SetFont('Times','',8.5);
+        };
+
+        // Section title
+        $pdf->Ln(6);
+        if ($pdf->GetY() + 12 > $pageBottom) {
+            $pdf->AddPage();
+            self::render_watermark($pdf, $payload);
+            $pageBottom = $pdf->GetPageHeight() - 16;
+        }
+        $pdf->SetFont('Times','B',10);
+        $pdf->SetX($leftX);
+        $pdf->Cell(0, 5, self::to_pdf_text('Cantidad por Maquina (pauta)'), 0, 1, 'L');
+
+        $drawHeader();
+
+        foreach ($rows as $r) {
+            $label = (string)($r['label'] ?? '');
+            $map = is_array($r['qty'] ?? null) ? $r['qty'] : [];
+
+            if ($pdf->GetY() + $rowH > $pageBottom) {
+                $pdf->AddPage();
+                self::render_watermark($pdf, $payload);
+                $pageBottom = $pdf->GetPageHeight() - 16;
+                $drawHeader();
+            }
+
+            $pdf->SetX($leftX);
+            $pdf->Cell($nameW, $rowH, self::fit_text($pdf, $nameW - 2, $label), 1, 0, 'L');
+            foreach ($hours as $h) {
+                $v = isset($map[intval($h)]) ? floatval($map[intval($h)]) : 0;
+                $txt = '';
+                if ($v > 0) {
+                    // show integers without decimals
+                    $txt = (abs($v - round($v)) < 0.0001) ? (string)intval(round($v)) : rtrim(rtrim(number_format($v, 2, '.', ''), '0'), '.');
+                }
+                $pdf->Cell($hourW, $rowH, self::to_pdf_text($txt), 1, 0, 'C');
+            }
+            $pdf->Ln();
+        }
+    }
+
     private static function to_pdf_text($s) {
         $s = is_string($s) ? $s : strval($s);
         $s = wp_strip_all_tags($s);
@@ -162,6 +368,11 @@ return $d.' de '.$mm.' del '.$y;
             'phone' => $get('phone', ''),
             'email' => sanitize_email(wp_unslash($post['email'] ?? '')),
             'model' => $get('model', ''),
+            // Templates (for pautas / Cantidad por Máquina)
+            'brand_key' => sanitize_key($get('brand_key', '')),
+            'template_key' => sanitize_key($get('template_key', '')),
+            'hours_set' => sanitize_key($get('hours_set', 'A')),
+            'hours_manual' => sanitize_text_field(wp_unslash($post['hours_manual'] ?? '')),
             'location' => $get('location', ''),
             'maint_hours' => $maint_hours,
             'quote_type' => $quote_type,
@@ -637,6 +848,14 @@ return $d.' de '.$mm.' del '.$y;
             $pdf->Cell($col['total'], $rowHeight, self::to_pdf_text($totalText), 0, 1, 'R');
 
             $pdf->SetY($startY + $rowHeight);
+        }
+
+        // Cantidad por Máquina (solo cuando hay plantilla MF)
+        if ($show_codes) {
+            $matrix = self::build_qty_machine_matrix($payload);
+            if ($matrix) {
+                self::render_qty_machine_table($pdf, $matrix, $payload);
+            }
         }
 
         // Observations line (template style)
