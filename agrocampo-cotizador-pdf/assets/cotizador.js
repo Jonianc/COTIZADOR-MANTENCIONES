@@ -352,6 +352,49 @@ function isRepairMode() {
   return (elQuoteType && String(elQuoteType.value || '') === 'repair');
 }
 
+function getLockedHoursSetForSelection() {
+  const brandKey = String(elBrand?.value || '').trim();
+  const tplKey = String(elTpl?.value || '').trim();
+  if (!brandKey || !tplKey) return '';
+  if (brandKey !== 'massey_ferguson') return '';
+
+  const rawTpl = CATALOG?.[brandKey]?.templates?.[tplKey] || null;
+  return inferHoursSetByTemplate(rawTpl) || '';
+}
+
+function syncHoursSetOptions() {
+  if (!elHoursSet) return;
+
+  const optA = elHoursSet.querySelector('option[value="A"]');
+  const optB = elHoursSet.querySelector('option[value="B"]');
+  const lockedSet = getLockedHoursSetForSelection();
+
+  if (optA) { optA.hidden = false; optA.disabled = false; }
+  if (optB) { optB.hidden = false; optB.disabled = false; }
+
+  if (lockedSet === 'A' || lockedSet === 'B') {
+    const other = (lockedSet === 'A') ? 'B' : 'A';
+    const optLocked = elHoursSet.querySelector('option[value="' + lockedSet + '"]');
+    const optOther = elHoursSet.querySelector('option[value="' + other + '"]');
+
+    if (optLocked) { optLocked.hidden = false; optLocked.disabled = false; }
+    if (optOther) { optOther.hidden = true; optOther.disabled = true; }
+
+    if (String(elHoursSet.value || '') !== lockedSet) {
+      elHoursSet.value = lockedSet;
+    }
+
+    if (!isRepairMode()) {
+      elHoursSet.disabled = true;
+    }
+    return;
+  }
+
+  if (!isRepairMode()) {
+    elHoursSet.disabled = false;
+  }
+}
+
 function setQuoteTypeUI() {
   const repair = isRepairMode();
 
@@ -389,6 +432,7 @@ function setQuoteTypeUI() {
 
 function refreshHoursSetManualOption() {
   if (!elHoursSet) return;
+  syncHoursSetOptions();
   const tplKey = String(elTpl?.value || '').trim();
   const hasTemplate = !!tplKey;
 
@@ -587,15 +631,6 @@ function applyTemplate(brandKey, tplKey) {
   const bKey = String(brandKey || '').trim();
   const tKey = String(tplKey || '').trim();
 
-  // Seleccionar automáticamente set de horas según pauta (evita caer en set A por defecto).
-  if (String(bKey) === 'massey_ferguson' && elHoursSet) {
-    const rawTpl = CATALOG?.[bKey]?.templates?.[tKey] || null;
-    const inferredSet = inferHoursSetByTemplate(rawTpl);
-    if (inferredSet && String(elHoursSet.value || '') !== inferredSet) {
-      elHoursSet.value = inferredSet;
-    }
-  }
-
   activeBrandKey = bKey;
   activeTemplateKey = tKey;
 
@@ -609,7 +644,7 @@ function applyTemplate(brandKey, tplKey) {
   const tk = activeTplKey();
   TEMPLATE_EDITS.set(tk, new Map());
 
-  // Con pauta activa: A/B sigue disponible; Manual no.
+  // Con pauta activa: se muestra solo el set correspondiente (A o B); Manual no.
   elHoursSet.disabled = false;
   refreshHoursSetManualOption();
   if (elHoursManual) elHoursManual.value = '';

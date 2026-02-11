@@ -1,3 +1,7 @@
+## 1.3.18 (2026-02-11)
+- Con pauta MF activa, el selector de set muestra solo el set correspondiente (A o B) inferido por plantilla y bloquea el alternativo.
+- Mantiene la precarga de ítems periódicos por frecuencia (incluyendo 2000h) con el set correcto aplicado desde la selección de pauta.
+
 ## 1.3.17 (2026-02-11)
 - Corrige asignación de set en pautas MF: ahora se infiere automáticamente desde la pauta (ej. MF7S-155T4K_CL usa Set B, evitando fallback a Set A).
 - Ajusta expansión de cantidades por frecuencia para no perder ítems periódicos cuando la pauta trae `qty` en cero (caso visible en 2000h).
