@@ -122,6 +122,7 @@ function expandQtyMap(qtyObj, freqStr, hoursList){
 
   const baseQty = nonZero.length ? Math.max(...nonZero.map(([,v])=>v)) : 0;
   const firstNonZeroHour = nonZero.length ? nonZero[0][0] : null;
+  const hasAnyDefinedQty = Object.keys(existing).length > 0;
 
   const spec = parseFreqSpec(freqStr);
   let every = spec.every;
@@ -135,18 +136,24 @@ function expandQtyMap(qtyObj, freqStr, hoursList){
     return out;
   }
 
-  // If we don't have any known non-zero quantity, don't invent it.
+  // Fallback: cuando el origen trae solo ceros pero existe frecuencia, usar 1 por evento de servicio.
+  // Esto evita perder ítems periódicos (ej. 2000h) en pautas que vienen truncadas en qty.
+  const fallbackQty = (hasAnyDefinedQty && baseQty <= 0) ? 1 : 0;
+
+  // If we don't have any known non-zero quantity and no safe fallback, keep existing values.
   if (!baseQty || baseQty <= 0) {
-    (hoursList || []).forEach(h => {
-      const hh = Number(h);
-      out[hh] = (Object.prototype.hasOwnProperty.call(existing, hh)) ? existing[hh] : 0;
-    });
-    return out;
+    if (!fallbackQty) {
+      (hoursList || []).forEach(h => {
+        const hh = Number(h);
+        out[hh] = (Object.prototype.hasOwnProperty.call(existing, hh)) ? existing[hh] : 0;
+      });
+      return out;
+    }
   }
 
   // Decide start: explicit first OR the first non-zero hour OR the period itself
   const start = (first && first > 0) ? first : (firstNonZeroHour || every);
-  const qtyOnService = baseQty;
+  const qtyOnService = (baseQty && baseQty > 0) ? baseQty : fallbackQty;
 
   (hoursList || []).forEach(h => {
     const hh = Number(h);
@@ -164,6 +171,29 @@ function expandQtyMap(qtyObj, freqStr, hoursList){
   });
 
   return out;
+}
+
+
+function inferHoursSetByTemplate(rawTpl){
+  const rawHours = Array.isArray(rawTpl?.hours) ? rawTpl.hours.map(Number).filter(n => Number.isFinite(n) && n > 0) : [];
+  if (!rawHours.length) return null;
+
+  // Comparar afinidad de horas de la pauta contra sets A/B (ignorando 10/50).
+  const score = { A: 0, B: 0 };
+  ['A', 'B'].forEach(k => {
+    const setHours = new Set((HOURS_SETS[k] || []).filter(h => Number(h) >= 100));
+    rawHours.forEach(h => {
+      if (setHours.has(h)) score[k] += 1;
+    });
+  });
+
+  if (score.B > score.A) return 'B';
+  if (score.A > score.B) return 'A';
+
+  // Desempate: si incluye 500 o 1500 suele corresponder a set B; 400/800/1200/1600 a set A.
+  if (rawHours.includes(500) || rawHours.includes(1500) || rawHours.includes(2500)) return 'B';
+  if (rawHours.includes(400) || rawHours.includes(800) || rawHours.includes(1200) || rawHours.includes(1600)) return 'A';
+  return null;
 }
 
 // ============ TEMPLATES ============
@@ -556,6 +586,15 @@ initDragDrop();
 function applyTemplate(brandKey, tplKey) {
   const bKey = String(brandKey || '').trim();
   const tKey = String(tplKey || '').trim();
+
+  // Seleccionar automáticamente set de horas según pauta (evita caer en set A por defecto).
+  if (String(bKey) === 'massey_ferguson' && elHoursSet) {
+    const rawTpl = CATALOG?.[bKey]?.templates?.[tKey] || null;
+    const inferredSet = inferHoursSetByTemplate(rawTpl);
+    if (inferredSet && String(elHoursSet.value || '') !== inferredSet) {
+      elHoursSet.value = inferredSet;
+    }
+  }
 
   activeBrandKey = bKey;
   activeTemplateKey = tKey;

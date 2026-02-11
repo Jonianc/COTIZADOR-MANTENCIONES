@@ -1,3 +1,7 @@
+## 1.3.17 (2026-02-11)
+- Corrige asignación de set en pautas MF: ahora se infiere automáticamente desde la pauta (ej. MF7S-155T4K_CL usa Set B, evitando fallback a Set A).
+- Ajusta expansión de cantidades por frecuencia para no perder ítems periódicos cuando la pauta trae `qty` en cero (caso visible en 2000h).
+
 ## 1.3.16 (2026-02-11)
 - Ajusta pauta MF Serie 7S para usar rango completo del set de horas seleccionado (100 a 5000 en Set B), manteniendo precarga y cálculo de ítems por frecuencia.
 - Revierte el recorte por `raw.hours` en MF que ocultaba horas válidas como 2000+ y podía aparentar falta de ítems.
