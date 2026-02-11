@@ -1,3 +1,7 @@
+## 1.3.19 (2026-02-11)
+- Oculta la tabla "Cantidad por Máquina (pauta)" en el PDF interno y la mantiene solo para PDF cliente.
+- Evita el bloque adicional que se estaba montando sobre la zona de totales/datos del vendedor en el interno.
+
 ## 1.3.18 (2026-02-11)
 - Con pauta MF activa, el selector de set muestra solo el set correspondiente (A o B) inferido por plantilla y bloquea el alternativo.
 - Mantiene la precarga de ítems periódicos por frecuencia (incluyendo 2000h) con el set correcto aplicado desde la selección de pauta.

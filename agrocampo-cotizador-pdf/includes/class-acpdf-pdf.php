@@ -850,8 +850,8 @@ return $d.' de '.$mm.' del '.$y;
             $pdf->SetY($startY + $rowHeight);
         }
 
-        // Cantidad por Máquina (solo cuando hay plantilla MF)
-        if ($show_codes) {
+        // Cantidad por Máquina (solo PDF cliente cuando hay plantilla MF)
+        if (!$show_codes) {
             $matrix = self::build_qty_machine_matrix($payload);
             if ($matrix) {
                 self::render_qty_machine_table($pdf, $matrix, $payload);
