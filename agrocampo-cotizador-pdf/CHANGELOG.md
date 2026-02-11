@@ -1,3 +1,7 @@
+## 1.3.20 (2026-02-11)
+- Elimina la tabla "Cantidad por Máquina (pauta)" de ambos PDFs (interno y cliente).
+- Ajusta el bloque de encabezado: limita/ancla el logo para evitar que desplace visualmente el título de la cotización.
+
 ## 1.3.19 (2026-02-11)
 - Oculta la tabla "Cantidad por Máquina (pauta)" en el PDF interno y la mantiene solo para PDF cliente.
 - Evita el bloque adicional que se estaba montando sobre la zona de totales/datos del vendedor en el interno.

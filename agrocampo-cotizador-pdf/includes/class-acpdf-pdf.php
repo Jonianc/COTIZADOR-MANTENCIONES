@@ -628,20 +628,22 @@ return $d.' de '.$mm.' del '.$y;
         if ($logo_width <= 0) {
             $logo_width = 45;
         }
+        // Mantener encabezado legible: limitar ancho efectivo del logo para que no empuje visualmente el título.
+        $logo_width = max(25.0, min(40.0, $logo_width));
         if (is_readable($logo)) {
             // keep aspect by specifying width only
-            $pdf->Image($logo, 12, 10, $logo_width);
+            $pdf->Image($logo, 12, 8, $logo_width);
         }
 
         $leftX = 12;
 
         // Header (quote number centered)
         $pdf->SetFont('Times','B',14);
-        $pdf->SetXY(0, 34);
+        $pdf->SetXY(0, 26);
         $pdf->Cell(210, 8, self::to_pdf_text('COTIZACION N° '.$quote_no), 0, 1, 'C');
 
         // Info block similar to template
-        $y0 = 46;
+        $y0 = 38;
         $lineH = 5.2;
         $labelW = 24;
         $colonW = 3;
@@ -715,7 +717,7 @@ return $d.' de '.$mm.' del '.$y;
 
         // Title
         $pdf->SetFont('Times','B',12);
-        $pdf->SetXY(0, 76);
+        $pdf->SetXY(0, 68);
         $pdf->Cell(210, 7, self::to_pdf_text($title), 0, 1, 'C');
 
         $pdf->Ln(2);
@@ -850,13 +852,7 @@ return $d.' de '.$mm.' del '.$y;
             $pdf->SetY($startY + $rowHeight);
         }
 
-        // Cantidad por Máquina (solo PDF cliente cuando hay plantilla MF)
-        if (!$show_codes) {
-            $matrix = self::build_qty_machine_matrix($payload);
-            if ($matrix) {
-                self::render_qty_machine_table($pdf, $matrix, $payload);
-            }
-        }
+        // Cantidad por Máquina (pauta): deshabilitada en ambos PDFs por requerimiento funcional.
 
         // Observations line (template style)
         $pdf->SetXY($leftX, max($pdf->GetY() + 4, 168));
