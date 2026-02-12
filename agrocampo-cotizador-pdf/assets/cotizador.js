@@ -336,6 +336,34 @@ function showAutosaveIndicator() {
 createAutosaveIndicator();
 
 // ============ TITLE UPDATE ============
+
+function getTemplateModelCode(tpl) {
+  const label = String((tpl && tpl.label) ? tpl.label : '').trim();
+  if (!label) return '';
+  return label.split(' - ')[0].trim();
+}
+
+function syncModelFieldState(tpl = null) {
+  if (!elModel) return;
+
+  const hasTemplate = !!(activeTemplateKey && tpl);
+  if (!hasTemplate) {
+    elModel.readOnly = false;
+    elModel.classList.remove('acpdf-readonly');
+    elModel.removeAttribute('title');
+    return;
+  }
+
+  const modelCode = getTemplateModelCode(tpl);
+  if (modelCode && String(elModel.value || '').trim() !== modelCode) {
+    elModel.value = modelCode;
+  }
+
+  elModel.readOnly = true;
+  elModel.classList.add('acpdf-readonly');
+  elModel.title = 'Modelo definido por la pauta seleccionada';
+}
+
 function updateTitle() {
   const m = (elModel.value || '').trim();
   const qt = (elQuoteType && elQuoteType.value) ? String(elQuoteType.value) : 'maintenance';
@@ -653,6 +681,7 @@ function applyTemplate(brandKey, tplKey) {
   fillBrandOptions();
 fillTemplateOptions();
 fillHours();
+syncModelFieldState(null);
 
   // Ensure selected hour belongs to template hours
   const cur = Number(elHours.value || 0);
@@ -660,11 +689,8 @@ fillHours();
     elHours.value = String(t.hours[0]);
   }
 
-  // Auto-fill model if empty
-  if (elModel && (!elModel.value || !String(elModel.value).trim())) {
-    const modelCode = String(t.label || '').split(' - ')[0].trim();
-    if (modelCode) elModel.value = modelCode;
-  }
+  // Modelo siempre coherente con la pauta activa.
+  syncModelFieldState(t);
 
   clearRows();
 
@@ -1111,6 +1137,8 @@ elBrand.addEventListener('change', () => {
   fillTemplateOptions();
   if (elTpl) elTpl.value = '';
   fillHours();
+  syncModelFieldState(null);
+  updateTitle();
 
   triggerAutosave();
 });
@@ -1123,6 +1151,8 @@ if (elQuoteType) {
 }
 
 elModel.addEventListener('input', () => {
+  // En modo pauta el campo queda bloqueado y coherente con plantilla.
+  if (elModel.readOnly) return;
   updateTitle();
   triggerAutosave();
 });
@@ -1136,6 +1166,8 @@ if (elTpl) {
       elHoursSet.disabled = false;
       refreshHoursSetManualOption();
       fillHours();
+      syncModelFieldState(null);
+      updateTitle();
       triggerAutosave();
       return;
     }
@@ -1185,6 +1217,7 @@ window.addEventListener('resize', debounce(checkMobileView, 200));
 fillBrandOptions();
 fillTemplateOptions();
 fillHours();
+syncModelFieldState(null);
 
 // Check for saved draft (only if no prefill)
 if (PREFILL) {

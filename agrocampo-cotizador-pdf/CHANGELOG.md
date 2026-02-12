@@ -1,3 +1,7 @@
+## 1.3.21 (2026-02-11)
+- Corrige actualización dinámica del campo Modelo: con pauta activa se sincroniza automáticamente con la plantilla seleccionada.
+- Mejora coherencia UI/UX del formulario: Modelo queda de solo lectura al usar pauta y vuelve editable al quitarla/cambiar marca.
+
 ## 1.3.20 (2026-02-11)
 - Elimina la tabla "Cantidad por Máquina (pauta)" de ambos PDFs (interno y cliente).
 - Ajusta el bloque de encabezado: limita/ancla el logo para evitar que desplace visualmente el título de la cotización.
