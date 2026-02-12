@@ -122,6 +122,7 @@ function expandQtyMap(qtyObj, freqStr, hoursList){
 
   const baseQty = nonZero.length ? Math.max(...nonZero.map(([,v])=>v)) : 0;
   const firstNonZeroHour = nonZero.length ? nonZero[0][0] : null;
+  const hasAnyDefinedQty = Object.keys(existing).length > 0;
 
   const spec = parseFreqSpec(freqStr);
   let every = spec.every;
@@ -135,18 +136,24 @@ function expandQtyMap(qtyObj, freqStr, hoursList){
     return out;
   }
 
-  // If we don't have any known non-zero quantity, don't invent it.
+  // Fallback: cuando el origen trae solo ceros pero existe frecuencia, usar 1 por evento de servicio.
+  // Esto evita perder ítems periódicos (ej. 2000h) en pautas que vienen truncadas en qty.
+  const fallbackQty = (hasAnyDefinedQty && baseQty <= 0) ? 1 : 0;
+
+  // If we don't have any known non-zero quantity and no safe fallback, keep existing values.
   if (!baseQty || baseQty <= 0) {
-    (hoursList || []).forEach(h => {
-      const hh = Number(h);
-      out[hh] = (Object.prototype.hasOwnProperty.call(existing, hh)) ? existing[hh] : 0;
-    });
-    return out;
+    if (!fallbackQty) {
+      (hoursList || []).forEach(h => {
+        const hh = Number(h);
+        out[hh] = (Object.prototype.hasOwnProperty.call(existing, hh)) ? existing[hh] : 0;
+      });
+      return out;
+    }
   }
 
   // Decide start: explicit first OR the first non-zero hour OR the period itself
   const start = (first && first > 0) ? first : (firstNonZeroHour || every);
-  const qtyOnService = baseQty;
+  const qtyOnService = (baseQty && baseQty > 0) ? baseQty : fallbackQty;
 
   (hoursList || []).forEach(h => {
     const hh = Number(h);
@@ -166,6 +173,29 @@ function expandQtyMap(qtyObj, freqStr, hoursList){
   return out;
 }
 
+
+function inferHoursSetByTemplate(rawTpl){
+  const rawHours = Array.isArray(rawTpl?.hours) ? rawTpl.hours.map(Number).filter(n => Number.isFinite(n) && n > 0) : [];
+  if (!rawHours.length) return null;
+
+  // Comparar afinidad de horas de la pauta contra sets A/B (ignorando 10/50).
+  const score = { A: 0, B: 0 };
+  ['A', 'B'].forEach(k => {
+    const setHours = new Set((HOURS_SETS[k] || []).filter(h => Number(h) >= 100));
+    rawHours.forEach(h => {
+      if (setHours.has(h)) score[k] += 1;
+    });
+  });
+
+  if (score.B > score.A) return 'B';
+  if (score.A > score.B) return 'A';
+
+  // Desempate: si incluye 500 o 1500 suele corresponder a set B; 400/800/1200/1600 a set A.
+  if (rawHours.includes(500) || rawHours.includes(1500) || rawHours.includes(2500)) return 'B';
+  if (rawHours.includes(400) || rawHours.includes(800) || rawHours.includes(1200) || rawHours.includes(1600)) return 'A';
+  return null;
+}
+
 // ============ TEMPLATES ============
 const CATALOG = (window.ACPDF_TEMPLATES && window.ACPDF_TEMPLATES.brands) ? window.ACPDF_TEMPLATES.brands : {};
 
@@ -180,7 +210,8 @@ function getActiveTemplate(){
   const raw = b.templates[activeTemplateKey];
   if (!raw) return null;
 
-  // Horas disponibles: en Massey Ferguson se rige por el set A/B (incluye 10/50 para mantenciones)
+  // Horas disponibles: en Massey Ferguson se rige por el set A/B (incluye 10/50 para mantenciones).
+  // Esto permite cubrir rangos completos (ej. Serie 7S hasta 5000 en Set B).
   let hours = Array.isArray(raw.hours) ? raw.hours.map(Number).filter(n => Number.isFinite(n)).sort((a,b)=>a-b) : [];
   if (String(activeBrandKey) === 'massey_ferguson') {
     const setKey = String(elHoursSet?.value || 'A');
@@ -305,6 +336,34 @@ function showAutosaveIndicator() {
 createAutosaveIndicator();
 
 // ============ TITLE UPDATE ============
+
+function getTemplateModelCode(tpl) {
+  const label = String((tpl && tpl.label) ? tpl.label : '').trim();
+  if (!label) return '';
+  return label.split(' - ')[0].trim();
+}
+
+function syncModelFieldState(tpl = null) {
+  if (!elModel) return;
+
+  const hasTemplate = !!(activeTemplateKey && tpl);
+  if (!hasTemplate) {
+    elModel.readOnly = false;
+    elModel.classList.remove('acpdf-readonly');
+    elModel.removeAttribute('title');
+    return;
+  }
+
+  const modelCode = getTemplateModelCode(tpl);
+  if (modelCode && String(elModel.value || '').trim() !== modelCode) {
+    elModel.value = modelCode;
+  }
+
+  elModel.readOnly = true;
+  elModel.classList.add('acpdf-readonly');
+  elModel.title = 'Modelo definido por la pauta seleccionada';
+}
+
 function updateTitle() {
   const m = (elModel.value || '').trim();
   const qt = (elQuoteType && elQuoteType.value) ? String(elQuoteType.value) : 'maintenance';
@@ -319,6 +378,49 @@ function updateTitle() {
 
 function isRepairMode() {
   return (elQuoteType && String(elQuoteType.value || '') === 'repair');
+}
+
+function getLockedHoursSetForSelection() {
+  const brandKey = String(elBrand?.value || '').trim();
+  const tplKey = String(elTpl?.value || '').trim();
+  if (!brandKey || !tplKey) return '';
+  if (brandKey !== 'massey_ferguson') return '';
+
+  const rawTpl = CATALOG?.[brandKey]?.templates?.[tplKey] || null;
+  return inferHoursSetByTemplate(rawTpl) || '';
+}
+
+function syncHoursSetOptions() {
+  if (!elHoursSet) return;
+
+  const optA = elHoursSet.querySelector('option[value="A"]');
+  const optB = elHoursSet.querySelector('option[value="B"]');
+  const lockedSet = getLockedHoursSetForSelection();
+
+  if (optA) { optA.hidden = false; optA.disabled = false; }
+  if (optB) { optB.hidden = false; optB.disabled = false; }
+
+  if (lockedSet === 'A' || lockedSet === 'B') {
+    const other = (lockedSet === 'A') ? 'B' : 'A';
+    const optLocked = elHoursSet.querySelector('option[value="' + lockedSet + '"]');
+    const optOther = elHoursSet.querySelector('option[value="' + other + '"]');
+
+    if (optLocked) { optLocked.hidden = false; optLocked.disabled = false; }
+    if (optOther) { optOther.hidden = true; optOther.disabled = true; }
+
+    if (String(elHoursSet.value || '') !== lockedSet) {
+      elHoursSet.value = lockedSet;
+    }
+
+    if (!isRepairMode()) {
+      elHoursSet.disabled = true;
+    }
+    return;
+  }
+
+  if (!isRepairMode()) {
+    elHoursSet.disabled = false;
+  }
 }
 
 function setQuoteTypeUI() {
@@ -358,6 +460,7 @@ function setQuoteTypeUI() {
 
 function refreshHoursSetManualOption() {
   if (!elHoursSet) return;
+  syncHoursSetOptions();
   const tplKey = String(elTpl?.value || '').trim();
   const hasTemplate = !!tplKey;
 
@@ -569,7 +672,7 @@ function applyTemplate(brandKey, tplKey) {
   const tk = activeTplKey();
   TEMPLATE_EDITS.set(tk, new Map());
 
-  // Con pauta activa: A/B sigue disponible; Manual no.
+  // Con pauta activa: se muestra solo el set correspondiente (A o B); Manual no.
   elHoursSet.disabled = false;
   refreshHoursSetManualOption();
   if (elHoursManual) elHoursManual.value = '';
@@ -578,6 +681,7 @@ function applyTemplate(brandKey, tplKey) {
   fillBrandOptions();
 fillTemplateOptions();
 fillHours();
+syncModelFieldState(null);
 
   // Ensure selected hour belongs to template hours
   const cur = Number(elHours.value || 0);
@@ -585,11 +689,8 @@ fillHours();
     elHours.value = String(t.hours[0]);
   }
 
-  // Auto-fill model if empty
-  if (elModel && (!elModel.value || !String(elModel.value).trim())) {
-    const modelCode = String(t.label || '').split(' - ')[0].trim();
-    if (modelCode) elModel.value = modelCode;
-  }
+  // Modelo siempre coherente con la pauta activa.
+  syncModelFieldState(t);
 
   clearRows();
 
@@ -1036,6 +1137,8 @@ elBrand.addEventListener('change', () => {
   fillTemplateOptions();
   if (elTpl) elTpl.value = '';
   fillHours();
+  syncModelFieldState(null);
+  updateTitle();
 
   triggerAutosave();
 });
@@ -1048,6 +1151,8 @@ if (elQuoteType) {
 }
 
 elModel.addEventListener('input', () => {
+  // En modo pauta el campo queda bloqueado y coherente con plantilla.
+  if (elModel.readOnly) return;
   updateTitle();
   triggerAutosave();
 });
@@ -1061,6 +1166,8 @@ if (elTpl) {
       elHoursSet.disabled = false;
       refreshHoursSetManualOption();
       fillHours();
+      syncModelFieldState(null);
+      updateTitle();
       triggerAutosave();
       return;
     }
@@ -1110,6 +1217,7 @@ window.addEventListener('resize', debounce(checkMobileView, 200));
 fillBrandOptions();
 fillTemplateOptions();
 fillHours();
+syncModelFieldState(null);
 
 // Check for saved draft (only if no prefill)
 if (PREFILL) {
