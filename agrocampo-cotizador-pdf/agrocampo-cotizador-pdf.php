@@ -9,7 +9,7 @@
 
 if (!defined('ABSPATH')) { exit; }
 
-define('ACPDF_VER', '1.3.28');
+define('ACPDF_VER', '1.3.29');
 define('ACPDF_SLUG', 'agrocampo-cotizador-pdf');
 define('ACPDF_DIR', plugin_dir_path(__FILE__));
 define('ACPDF_URL', plugin_dir_url(__FILE__));
