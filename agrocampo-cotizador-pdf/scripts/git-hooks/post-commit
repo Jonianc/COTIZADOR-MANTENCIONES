@@ -1,12 +1,38 @@
+cat > .git/hooks/post-commit <<'EOF'
 #!/usr/bin/env bash
 set -euo pipefail
 
 REPO_ROOT="$(git rev-parse --show-toplevel)"
-PLUGIN_MAIN="agrocampo-cotizador-pdf/agrocampo-cotizador-pdf.php"
+PLUGIN_DIR="$REPO_ROOT/agrocampo-cotizador-pdf"
+PLUGIN_MAIN_REL="agrocampo-cotizador-pdf/agrocampo-cotizador-pdf.php"
+SCRIPT_REL="agrocampo-cotizador-pdf/scripts/build_release_zip.py"
 
-# Ejecuta empaquetado solo si cambió versión del plugin en el último commit.
-if git diff-tree --no-commit-id --name-only -r HEAD | grep -qx "$PLUGIN_MAIN"; then
-  if git show HEAD:"$PLUGIN_MAIN" | grep -q "Version:"; then
-    python3 "$REPO_ROOT/agrocampo-cotizador-pdf/scripts/build_release_zip.py" >/dev/null || true
-  fi
+LOG_DIR="$PLUGIN_DIR/dist"
+LOG_FILE="$LOG_DIR/release_hook.log"
+mkdir -p "$LOG_DIR"
+
+echo "---- $(date) post-commit ----" >> "$LOG_FILE"
+echo "Repo: $REPO_ROOT" >> "$LOG_FILE"
+
+# Solo corre si el último commit tocó el main del plugin (donde está la versión)
+if ! git diff-tree --no-commit-id --name-only -r HEAD | grep -qx "$PLUGIN_MAIN_REL"; then
+  echo "Skip: no cambió $PLUGIN_MAIN_REL" >> "$LOG_FILE"
+  exit 0
 fi
+
+# Validación: el header debe contener "Version:" (case-insensitive por si acaso)
+if ! git show HEAD:"$PLUGIN_MAIN_REL" | grep -qiE "^\\s*Version\\s*:"; then
+  echo "Skip: no encontré header 'Version:' en $PLUGIN_MAIN_REL" >> "$LOG_FILE"
+  exit 0
+fi
+
+echo "Run: build_release_zip.py" >> "$LOG_FILE"
+
+# Ejecuta con py -3 (Windows)
+cd "$REPO_ROOT"
+py -3 "$REPO_ROOT/$SCRIPT_REL" >> "$LOG_FILE" 2>&1
+
+echo "OK" >> "$LOG_FILE"
+EOF
+
+chmod +x .git/hooks/post-commit
