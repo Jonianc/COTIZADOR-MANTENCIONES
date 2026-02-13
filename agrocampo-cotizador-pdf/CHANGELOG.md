@@ -1,3 +1,7 @@
+## 1.3.25 (2026-02-13)
+- Ajusta el overlay "Generando PDF..." en envío de formulario: evita que quede visible por largo tiempo cuando la descarga del PDF inicia de inmediato.
+- Reemplaza el timeout fijo largo por cierre rápido controlado y agrega eventos de recuperación (`pageshow`, `focus`, `visibilitychange`) para ocultar el overlay cuando el usuario vuelve a la vista.
+
 ## 1.3.24 (2026-02-13)
 - Corrige selector de "Tipo mantención (horas)" para LOVOL y FARMTRAC con pauta activa: ahora respeta el set A/B completo (no queda truncado en 1200).
 - La precarga por frecuencia en LOVOL/FARMTRAC se expande sobre todo el rango del set seleccionado (ej. Set A hasta 4800), alineado con la tabla "Cantidad Unidad y/o Litros por Tractor por horas" de las pautas.

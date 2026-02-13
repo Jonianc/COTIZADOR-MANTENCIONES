@@ -306,17 +306,43 @@ function createLoadingOverlay() {
   document.body.appendChild(overlay);
 }
 
+let loadingHideTimer = null;
+
+function clearLoadingHideTimer() {
+  if (loadingHideTimer) {
+    clearTimeout(loadingHideTimer);
+    loadingHideTimer = null;
+  }
+}
+
 function showLoading() {
   const el = id('acpdf-loading');
   if (el) el.classList.add('active');
 }
 
 function hideLoading() {
+  clearLoadingHideTimer();
   const el = id('acpdf-loading');
   if (el) el.classList.remove('active');
 }
 
+function showLoadingForSubmit() {
+  showLoading();
+  // En descargas directas el navegador no siempre notifica fin de navegación,
+  // por lo que evitamos dejar el mensaje bloqueado demasiado tiempo.
+  clearLoadingHideTimer();
+  loadingHideTimer = setTimeout(() => {
+    hideLoading();
+  }, 3000);
+}
+
 createLoadingOverlay();
+
+window.addEventListener('pageshow', hideLoading);
+window.addEventListener('focus', hideLoading);
+document.addEventListener('visibilitychange', () => {
+  if (!document.hidden) hideLoading();
+});
 
 // ============ AUTOSAVE INDICATOR ============
 function createAutosaveIndicator() {
@@ -1184,11 +1210,8 @@ elForm.addEventListener('submit', (e) => {
     return false;
   }
   
-  showLoading();
+  showLoadingForSubmit();
   clearLocalStorage();
-  
-  // Hide loading after timeout (in case of issues)
-  setTimeout(hideLoading, 30000);
 });
 
 // Listen for input changes on form fields for autosave
