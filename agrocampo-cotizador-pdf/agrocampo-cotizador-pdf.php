@@ -130,3 +130,4 @@ function acpdf_deactivate() {
     flush_rewrite_rules();
 }
 register_deactivation_hook(__FILE__, 'acpdf_deactivate');
+// hook test Fri Feb 13 03:14:13 HSP 2026
