@@ -1,3 +1,7 @@
+## 1.3.27 (2026-02-13)
+- Con pauta activa en LOVOL/FARMTRAC (además de MF), el selector "Set de horas" ahora se bloquea por pauta inferida (A/B) igual que en Massey Ferguson.
+- Ajusta etiqueta visual del set con pauta activa para mostrar rango desde 100h (sin "10–50") y mantener coherencia con "Tipo mantención (horas)".
+
 ## 1.3.26 (2026-02-13)
 - Con pauta precargada en MF/LOVOL/FARMTRAC, el selector de "Tipo mantención (horas)" ahora excluye 10 y 50 y ofrece horas desde 100h, replicando la validación esperada para set de horas.
 - Mantiene el rango completo por set A/B para pautas (desde 100h hasta 4800/5000 según set).

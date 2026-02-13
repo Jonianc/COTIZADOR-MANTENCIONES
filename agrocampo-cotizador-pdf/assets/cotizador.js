@@ -409,11 +409,29 @@ function isRepairMode() {
   return (elQuoteType && String(elQuoteType.value || '') === 'repair');
 }
 
+function updateHoursSetOptionLabels() {
+  if (!elHoursSet) return;
+
+  const optA = elHoursSet.querySelector('option[value="A"]');
+  const optB = elHoursSet.querySelector('option[value="B"]');
+  const brandKey = String(elBrand?.value || '').trim();
+  const hasTemplate = !!String(elTpl?.value || '').trim();
+  const hideTenFifty = hasTemplate && ['massey_ferguson', 'lovol', 'farmtrac'].includes(brandKey);
+
+  const lblAFull = 'A: 10–50–100 y luego cada 400 hasta 4800';
+  const lblBFull = 'B: 10–50–100 y luego 500/1000/1500 hasta 5000';
+  const lblAFrom100 = 'A: 100 y luego cada 400 hasta 4800';
+  const lblBFrom100 = 'B: 100 y luego 500/1000/1500 hasta 5000';
+
+  if (optA) optA.textContent = hideTenFifty ? lblAFrom100 : lblAFull;
+  if (optB) optB.textContent = hideTenFifty ? lblBFrom100 : lblBFull;
+}
+
 function getLockedHoursSetForSelection() {
   const brandKey = String(elBrand?.value || '').trim();
   const tplKey = String(elTpl?.value || '').trim();
   if (!brandKey || !tplKey) return '';
-  if (brandKey !== 'massey_ferguson') return '';
+  if (!['massey_ferguson', 'lovol', 'farmtrac'].includes(brandKey)) return '';
 
   const rawTpl = CATALOG?.[brandKey]?.templates?.[tplKey] || null;
   return inferHoursSetByTemplate(rawTpl) || '';
@@ -421,6 +439,8 @@ function getLockedHoursSetForSelection() {
 
 function syncHoursSetOptions() {
   if (!elHoursSet) return;
+
+  updateHoursSetOptionLabels();
 
   const optA = elHoursSet.querySelector('option[value="A"]');
   const optB = elHoursSet.querySelector('option[value="B"]');
