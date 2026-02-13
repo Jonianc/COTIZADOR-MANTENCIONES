@@ -1,3 +1,7 @@
+## 1.3.24 (2026-02-13)
+- Corrige selector de "Tipo mantención (horas)" para LOVOL y FARMTRAC con pauta activa: ahora respeta el set A/B completo (no queda truncado en 1200).
+- La precarga por frecuencia en LOVOL/FARMTRAC se expande sobre todo el rango del set seleccionado (ej. Set A hasta 4800), alineado con la tabla "Cantidad Unidad y/o Litros por Tractor por horas" de las pautas.
+
 ## 1.3.23 (2026-02-13)
 - Agrega comando `fill-missing-qty` al importador para completar automáticamente cantidades `qty` faltantes por hora en pautas LOVOL/FARMTRAC.
 - Ejecuta validación/carga de faltantes en `pautas.json`; no se detectaron llaves `qty` faltantes para LOVOL/FARMTRAC con los datos actuales.
