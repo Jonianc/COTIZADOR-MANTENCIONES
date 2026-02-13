@@ -153,6 +153,53 @@ def cmd_import_csv(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_fill_missing_qty(args: argparse.Namespace) -> int:
+    catalog_path = Path(args.catalog)
+    catalog = load_catalog(catalog_path)
+
+    selected_brands = {b.strip() for b in (args.brands or '').split(',') if b.strip()}
+    if not selected_brands:
+        selected_brands = {"lovol", "farmtrac"}
+
+    brands = catalog.get("brands", {})
+    missing_keys_added = 0
+
+    for brand_key in selected_brands:
+        brand = brands.get(brand_key)
+        if not isinstance(brand, dict):
+            continue
+        templates = brand.get("templates", {})
+        if not isinstance(templates, dict):
+            continue
+
+        for tpl in templates.values():
+            if not isinstance(tpl, dict):
+                continue
+            hours = [str(int(h)) for h in (tpl.get("hours") or [])]
+            items = tpl.get("items") or []
+            if not isinstance(items, list):
+                continue
+
+            for item in items:
+                if not isinstance(item, dict):
+                    continue
+                qty = item.get("qty")
+                if not isinstance(qty, dict):
+                    qty = {}
+                    item["qty"] = qty
+                for hour in hours:
+                    if hour not in qty:
+                        qty[hour] = 0
+                        missing_keys_added += 1
+
+    if missing_keys_added > 0:
+        save_catalog(catalog_path, catalog)
+        print(f"Catálogo actualizado: {catalog_path} (qty faltantes cargadas: {missing_keys_added})")
+    else:
+        print("No se detectaron qty faltantes para las marcas indicadas.")
+    return 0
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="Importador de pautas para el cotizador")
     sub = parser.add_subparsers(dest="command", required=True)
@@ -166,6 +213,18 @@ def build_parser() -> argparse.ArgumentParser:
     p_import.add_argument("--csv", required=True, help="CSV normalizado")
     p_import.add_argument("--catalog", required=True, help="Ruta a pautas.json")
     p_import.set_defaults(func=cmd_import_csv)
+
+    p_fill = sub.add_parser(
+        "fill-missing-qty",
+        help="Completa llaves qty faltantes por hora en pautas (default: LOVOL/FARMTRAC)",
+    )
+    p_fill.add_argument("--catalog", required=True, help="Ruta a pautas.json")
+    p_fill.add_argument(
+        "--brands",
+        default="lovol,farmtrac",
+        help="Marcas separadas por coma (default: lovol,farmtrac)",
+    )
+    p_fill.set_defaults(func=cmd_fill_missing_qty)
 
     return parser
 

@@ -1,3 +1,7 @@
+## 1.3.23 (2026-02-13)
+- Agrega comando `fill-missing-qty` al importador para completar automáticamente cantidades `qty` faltantes por hora en pautas LOVOL/FARMTRAC.
+- Ejecuta validación/carga de faltantes en `pautas.json`; no se detectaron llaves `qty` faltantes para LOVOL/FARMTRAC con los datos actuales.
+
 ## 1.3.22 (2026-02-11)
 - Agrega utilitario de importación de pautas para LOVOL/FARMTRAC desde flujo PDF -> CSV -> `pautas.json`.
 - Incluye guía rápida de uso para extracción de texto e importación al catálogo del plugin.

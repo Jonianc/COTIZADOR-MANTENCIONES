@@ -40,3 +40,13 @@ python scripts/pautas_importer.py import-csv \
 - El importador crea/actualiza marcas y plantillas por `brand_key` + `template_key`.
 - Para conservar historial, respalda `includes/data/pautas.json` antes de importar.
 - Luego valida en UI que las marcas y pautas nuevas aparezcan correctamente.
+
+
+## 4) Completar cantidades faltantes por hora
+
+Para asegurar consistencia de `qty` (todas las horas declaradas en la plantilla deben existir como llave):
+
+```bash
+python scripts/pautas_importer.py fill-missing-qty   --catalog includes/data/pautas.json   --brands lovol,farmtrac
+```
+
