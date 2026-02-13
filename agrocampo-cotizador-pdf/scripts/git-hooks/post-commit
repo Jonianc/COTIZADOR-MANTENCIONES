@@ -1,0 +1,12 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+REPO_ROOT="$(git rev-parse --show-toplevel)"
+PLUGIN_MAIN="agrocampo-cotizador-pdf/agrocampo-cotizador-pdf.php"
+
+# Ejecuta empaquetado solo si cambió versión del plugin en el último commit.
+if git diff-tree --no-commit-id --name-only -r HEAD | grep -qx "$PLUGIN_MAIN"; then
+  if git show HEAD:"$PLUGIN_MAIN" | grep -q "Version:"; then
+    python3 "$REPO_ROOT/agrocampo-cotizador-pdf/scripts/build_release_zip.py" >/dev/null || true
+  fi
+fi

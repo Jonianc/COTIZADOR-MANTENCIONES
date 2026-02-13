@@ -1,3 +1,8 @@
+## 1.3.28 (2026-02-13)
+- Agrega script de release `scripts/build_release_zip.py` para generar automáticamente ZIP versionado del plugin (`dist/agrocampo-cotizador-pdf-vX.Y.Z.zip`).
+- Agrega hook local opcional (`scripts/git-hooks/post-commit`) + instalador (`scripts/install_git_hook.sh`) para empaquetar ZIP automáticamente en commits que incluyan cambio de versión.
+- Documenta flujo de empaquetado manual/automático en `scripts/README_RELEASE_ZIP.md`.
+
 ## 1.3.27 (2026-02-13)
 - Con pauta activa en LOVOL/FARMTRAC (además de MF), el selector "Set de horas" ahora se bloquea por pauta inferida (A/B) igual que en Massey Ferguson.
 - Ajusta etiqueta visual del set con pauta activa para mostrar rango desde 100h (sin "10–50") y mantener coherencia con "Tipo mantención (horas)".
