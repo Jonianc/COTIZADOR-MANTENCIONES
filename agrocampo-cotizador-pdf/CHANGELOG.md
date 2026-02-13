@@ -1,3 +1,7 @@
+## 1.3.26 (2026-02-13)
+- Con pauta precargada en MF/LOVOL/FARMTRAC, el selector de "Tipo mantención (horas)" ahora excluye 10 y 50 y ofrece horas desde 100h, replicando la validación esperada para set de horas.
+- Mantiene el rango completo por set A/B para pautas (desde 100h hasta 4800/5000 según set).
+
 ## 1.3.25 (2026-02-13)
 - Ajusta el overlay "Generando PDF..." en envío de formulario: evita que quede visible por largo tiempo cuando la descarga del PDF inicia de inmediato.
 - Reemplaza el timeout fijo largo por cierre rápido controlado y agrega eventos de recuperación (`pageshow`, `focus`, `visibilitychange`) para ocultar el overlay cuando el usuario vuelve a la vista.

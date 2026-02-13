@@ -218,7 +218,8 @@ function getActiveTemplate(){
   if (expandByHoursSet) {
     const setKey = String(elHoursSet?.value || 'A');
     const k = Object.prototype.hasOwnProperty.call(HOURS_SETS, setKey) ? setKey : 'A';
-    hours = HOURS_SETS[k].slice();
+    // Con pauta activa, no ofrecer 10/50: se trabaja desde 100h.
+    hours = HOURS_SETS[k].filter(h => Number(h) >= 100);
   }
 
   const items = Array.isArray(raw.items) ? raw.items.map(it => {
