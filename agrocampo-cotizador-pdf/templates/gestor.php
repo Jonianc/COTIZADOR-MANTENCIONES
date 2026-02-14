@@ -179,8 +179,9 @@ $filter_args = array_filter([
                 </div>
 
                 <div class="filter-actions">
+                  <span class="muted small filter-hint">Tip: presiona Enter en un campo para filtrar.</span>
                   <button type="submit" class="btn btn-ghost">Filtrar</button>
-                  <a class="btn btn-ghost" href="<?php echo esc_url($base_url); ?>">Limpiar</a>
+                  <a class="btn btn-danger" href="<?php echo esc_url($base_url); ?>" title="Limpiar todos los filtros">Limpiar</a>
                   <?php if ($total_items > 0) : ?>
                     <button type="submit" name="export" value="csv" class="btn btn-success" title="Exportar resultados filtrados">📥 CSV</button>
                   <?php endif; ?>
@@ -259,11 +260,11 @@ $filter_args = array_filter([
                           <td class="t-right"><?php echo esc_html(number_format(floatval($entry['iva'] ?? 0), 0, ',', '.')); ?></td>
                           <td class="t-right"><strong><?php echo esc_html(number_format(floatval($entry['total'] ?? 0), 0, ',', '.')); ?></strong></td>
                           <td>
-                            <div style="display:flex;gap:4px;flex-wrap:wrap;">
+                            <div class="action-buttons">
                               <?php if (!empty($entry['payload']) && is_array($entry['payload'])) : ?>
-                                <a class="btn btn-ghost btn-sm" href="<?php echo esc_url($pdf_url); ?>" target="_blank" rel="noopener noreferrer" title="Ver PDF">📄</a>
-                                <a class="btn btn-ghost btn-sm" href="<?php echo esc_url($edit_url); ?>" target="_blank" rel="noopener noreferrer" title="Editar">✏️</a>
-                                <a class="btn btn-ghost btn-sm" href="<?php echo esc_url($duplicate_url); ?>" title="Duplicar">📋</a>
+                                <a class="btn btn-ghost btn-sm" href="<?php echo esc_url($pdf_url); ?>" target="_blank" rel="noopener noreferrer" title="Ver PDF">📄 Ver PDF</a>
+                                <a class="btn btn-ghost btn-sm" href="<?php echo esc_url($edit_url); ?>" target="_blank" rel="noopener noreferrer" title="Editar">✏️ Editar</a>
+                                <a class="btn btn-ghost btn-sm" href="<?php echo esc_url($duplicate_url); ?>" title="Duplicar">📋 Duplicar</a>
                               <?php endif; ?>
                               <form method="post" action="<?php echo esc_url($base_url); ?>" style="display:inline;" onsubmit="return confirm('¿Eliminar la cotización N° <?php echo esc_js($entry['quote_no'] ?? ''); ?>?');">
                                 <input type="hidden" name="acpdf_action" value="delete">
@@ -272,7 +273,7 @@ $filter_args = array_filter([
                                 <?php foreach ($filter_args as $k => $v) : ?>
                                   <input type="hidden" name="<?php echo esc_attr($k); ?>" value="<?php echo esc_attr($v); ?>">
                                 <?php endforeach; ?>
-                                <button type="submit" class="btn btn-danger btn-sm" title="Eliminar">🗑️</button>
+                                <button type="submit" class="btn btn-danger btn-sm" title="Eliminar">🗑️ Eliminar</button>
                               </form>
                             </div>
                           </td>

@@ -1,3 +1,33 @@
+## 1.3.29 (2026-02-13)
+- Mejora UX del Gestor: acciones de fila ahora incluyen texto + ícono (Ver PDF, Editar, Duplicar, Eliminar) para mayor claridad.
+- Mejora barra de filtros del Gestor: estilo sticky, borde visual y mensaje de atajo (Enter para filtrar).
+- Ajusta layout responsive de acciones del Gestor para móviles (acciones en columna y ancho completo).
+
+## 1.3.28 (2026-02-13)
+- Agrega script de release `scripts/build_release_zip.py` para generar automáticamente ZIP versionado del plugin (`dist/agrocampo-cotizador-pdf-vX.Y.Z.zip`).
+- Agrega hook local opcional (`scripts/git-hooks/post-commit`) + instalador (`scripts/install_git_hook.sh`) para empaquetar ZIP automáticamente en commits que incluyan cambio de versión.
+- Documenta flujo de empaquetado manual/automático en `scripts/README_RELEASE_ZIP.md`.
+
+## 1.3.27 (2026-02-13)
+- Con pauta activa en LOVOL/FARMTRAC (además de MF), el selector "Set de horas" ahora se bloquea por pauta inferida (A/B) igual que en Massey Ferguson.
+- Ajusta etiqueta visual del set con pauta activa para mostrar rango desde 100h (sin "10–50") y mantener coherencia con "Tipo mantención (horas)".
+
+## 1.3.26 (2026-02-13)
+- Con pauta precargada en MF/LOVOL/FARMTRAC, el selector de "Tipo mantención (horas)" ahora excluye 10 y 50 y ofrece horas desde 100h, replicando la validación esperada para set de horas.
+- Mantiene el rango completo por set A/B para pautas (desde 100h hasta 4800/5000 según set).
+
+## 1.3.25 (2026-02-13)
+- Ajusta el overlay "Generando PDF..." en envío de formulario: evita que quede visible por largo tiempo cuando la descarga del PDF inicia de inmediato.
+- Reemplaza el timeout fijo largo por cierre rápido controlado y agrega eventos de recuperación (`pageshow`, `focus`, `visibilitychange`) para ocultar el overlay cuando el usuario vuelve a la vista.
+
+## 1.3.24 (2026-02-13)
+- Corrige selector de "Tipo mantención (horas)" para LOVOL y FARMTRAC con pauta activa: ahora respeta el set A/B completo (no queda truncado en 1200).
+- La precarga por frecuencia en LOVOL/FARMTRAC se expande sobre todo el rango del set seleccionado (ej. Set A hasta 4800), alineado con la tabla "Cantidad Unidad y/o Litros por Tractor por horas" de las pautas.
+
+## 1.3.23 (2026-02-13)
+- Agrega comando `fill-missing-qty` al importador para completar automáticamente cantidades `qty` faltantes por hora en pautas LOVOL/FARMTRAC.
+- Ejecuta validación/carga de faltantes en `pautas.json`; no se detectaron llaves `qty` faltantes para LOVOL/FARMTRAC con los datos actuales.
+
 ## 1.3.22 (2026-02-11)
 - Agrega utilitario de importación de pautas para LOVOL/FARMTRAC desde flujo PDF -> CSV -> `pautas.json`.
 - Incluye guía rápida de uso para extracción de texto e importación al catálogo del plugin.
