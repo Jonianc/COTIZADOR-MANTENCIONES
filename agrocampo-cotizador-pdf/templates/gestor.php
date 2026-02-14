@@ -189,7 +189,7 @@ $filter_args = array_filter([
               </form>
 
               <div class="table-responsive">
-              <table>
+              <table class="gestor-table">
                 <thead>
                   <tr>
                     <th>Fecha</th>

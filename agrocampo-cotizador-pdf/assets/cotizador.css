@@ -172,6 +172,15 @@ textarea {
 
 .btn-sm { padding: 6px 10px; font-size: 12px; }
 
+
+.btn:focus-visible,
+.filter-bar input:focus-visible,
+.filter-bar select:focus-visible,
+.pagination a:focus-visible {
+  outline: 2px solid #111;
+  outline-offset: 2px;
+}
+
 /* Tables */
 table {
   width: 100%;
@@ -262,9 +271,11 @@ tbody tr:hover { background: #fafbfc; }
   background: var(--gray);
   border-radius: 10px;
   border: 1px solid var(--border);
+  box-shadow: 0 4px 10px rgba(0,0,0,.04);
+  backdrop-filter: saturate(120%) blur(2px);
   position: sticky;
   top: 10px;
-  z-index: 10;
+  z-index: 15;
 }
 
 .filter-bar .filter-group {
@@ -300,6 +311,38 @@ tbody tr:hover { background: #fafbfc; }
   white-space: nowrap;
 }
 
+
+.gestor-table {
+  table-layout: fixed;
+}
+
+.gestor-table th,
+.gestor-table td {
+  vertical-align: middle;
+}
+
+.gestor-table th {
+  top: 62px;
+  white-space: nowrap;
+}
+
+.gestor-table tbody tr:nth-child(odd):not(.group-row) {
+  background: #fcfcfd;
+}
+
+.gestor-table tbody tr:hover:not(.group-row) {
+  background: #f3f7ff;
+}
+
+.gestor-table td:last-child {
+  min-width: 220px;
+}
+
+.gestor-table .t-right,
+.gestor-table .t-center {
+  white-space: nowrap;
+}
+
 /* Pagination */
 .pagination {
   display: flex;
@@ -329,7 +372,8 @@ tbody tr:hover { background: #fafbfc; }
 .pagination .current {
   background: var(--red);
   color: #fff;
-  font-weight: 600;
+  font-weight: 700;
+  box-shadow: 0 2px 6px rgba(183,0,0,.35);
 }
 
 .pagination .disabled {
@@ -490,6 +534,14 @@ tbody tr:hover { background: #fafbfc; }
     width: 100%;
     justify-content: center;
   }
+
+  .gestor-table th {
+    top: 0;
+  }
+
+  .gestor-table td:last-child {
+    min-width: 170px;
+  }
   
   .totals {
     min-width: 100%;
@@ -516,6 +568,7 @@ tbody tr:hover { background: #fafbfc; }
   
   .pagination {
     gap: 4px;
+    justify-content: flex-start;
   }
   
   .pagination a,

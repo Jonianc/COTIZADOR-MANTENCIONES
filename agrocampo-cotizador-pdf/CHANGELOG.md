@@ -1,3 +1,8 @@
+## 1.3.31 (2026-02-13)
+- UX Gestor (iteración 2): tabla del gestor con clase dedicada (`gestor-table`) y mejoras de escaneo visual (zebra suave, hover más claro, acciones con mejor estabilidad de ancho).
+- UX filtros/paginación: barra sticky con mejor jerarquía visual y foco accesible; paginación con estado actual más visible.
+- Ajustes responsive del gestor: sticky header de tabla desactivado en móvil y ancho de acciones optimizado para pantallas pequeñas.
+
 ## 1.3.30 (2026-02-13)
 - Ajusta empaquetado de release: `build_release_zip.py` ahora genera el ZIP por defecto fuera de la carpeta del plugin (`dist-releases/` a nivel repo).
 - Permite configurar ruta de salida por `--out-dir` o variable de entorno `ACPDF_RELEASE_OUT_DIR`.
