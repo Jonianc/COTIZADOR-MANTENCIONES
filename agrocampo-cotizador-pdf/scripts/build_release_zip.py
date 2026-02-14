@@ -4,11 +4,13 @@
 from __future__ import annotations
 
 import argparse
+import os
 import re
 import zipfile
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
+REPO_ROOT = ROOT.parent
 PLUGIN_MAIN = ROOT / "agrocampo-cotizador-pdf.php"
 
 EXCLUDE_DIRS = {
@@ -52,7 +54,7 @@ def should_skip(path: Path) -> bool:
     return False
 
 
-def build_zip(version: str, output: Path) -> Path:
+def build_zip(output: Path) -> Path:
     output.parent.mkdir(parents=True, exist_ok=True)
 
     base_dir_name = ROOT.name
@@ -66,16 +68,27 @@ def build_zip(version: str, output: Path) -> Path:
     return output
 
 
+def resolve_out_dir(raw: str) -> Path:
+    out = Path(raw).expanduser()
+    if out.is_absolute():
+        return out
+    return REPO_ROOT / out
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description="Genera ZIP versionado del plugin")
-    parser.add_argument("--out-dir", default="dist", help="Directorio de salida relativo al plugin")
+    parser.add_argument(
+        "--out-dir",
+        default=os.getenv("ACPDF_RELEASE_OUT_DIR", "dist-releases"),
+        help="Directorio de salida (relativo al repo o absoluto)",
+    )
     args = parser.parse_args()
 
     version = read_version()
-    out_dir = ROOT / args.out_dir
+    out_dir = resolve_out_dir(args.out_dir)
     out_file = out_dir / f"{ROOT.name}-v{version}.zip"
 
-    built = build_zip(version, out_file)
+    built = build_zip(out_file)
     print(f"ZIP generado: {built}")
     return 0
 

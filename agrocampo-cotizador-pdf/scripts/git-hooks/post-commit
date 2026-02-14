@@ -4,9 +4,20 @@ set -euo pipefail
 REPO_ROOT="$(git rev-parse --show-toplevel)"
 PLUGIN_MAIN="agrocampo-cotizador-pdf/agrocampo-cotizador-pdf.php"
 
-# Ejecuta empaquetado solo si cambió versión del plugin en el último commit.
-if git diff-tree --no-commit-id --name-only -r HEAD | grep -qx "$PLUGIN_MAIN"; then
-  if git show HEAD:"$PLUGIN_MAIN" | grep -q "Version:"; then
-    python3 "$REPO_ROOT/agrocampo-cotizador-pdf/scripts/build_release_zip.py" >/dev/null || true
-  fi
+# Ejecuta empaquetado solo si cambió la versión del plugin en el último commit.
+if ! git diff-tree --no-commit-id --name-only -r HEAD | grep -qx "$PLUGIN_MAIN"; then
+  exit 0
+fi
+
+if ! git rev-parse --verify HEAD~1 >/dev/null 2>&1; then
+  # Primer commit: empaquetar de todas formas
+  python3 "$REPO_ROOT/agrocampo-cotizador-pdf/scripts/build_release_zip.py" >/dev/null || true
+  exit 0
+fi
+
+prev_ver="$(git show HEAD~1:"$PLUGIN_MAIN" | sed -n "s/.*Version: \([0-9]\+\.[0-9]\+\.[0-9]\+\).*/\1/p" | head -n1)"
+curr_ver="$(git show HEAD:"$PLUGIN_MAIN" | sed -n "s/.*Version: \([0-9]\+\.[0-9]\+\.[0-9]\+\).*/\1/p" | head -n1)"
+
+if [[ -n "$curr_ver" && "$curr_ver" != "$prev_ver" ]]; then
+  python3 "$REPO_ROOT/agrocampo-cotizador-pdf/scripts/build_release_zip.py" >/dev/null || true
 fi

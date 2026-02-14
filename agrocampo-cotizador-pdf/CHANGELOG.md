@@ -1,3 +1,8 @@
+## 1.3.30 (2026-02-13)
+- Ajusta empaquetado de release: `build_release_zip.py` ahora genera el ZIP por defecto fuera de la carpeta del plugin (`dist-releases/` a nivel repo).
+- Permite configurar ruta de salida por `--out-dir` o variable de entorno `ACPDF_RELEASE_OUT_DIR`.
+- Mejora hook `post-commit`: ahora empaqueta solo cuando detecta cambio real de versión en `agrocampo-cotizador-pdf.php`.
+
 ## 1.3.29 (2026-02-13)
 - Mejora UX del Gestor: acciones de fila ahora incluyen texto + ícono (Ver PDF, Editar, Duplicar, Eliminar) para mayor claridad.
 - Mejora barra de filtros del Gestor: estilo sticky, borde visual y mensaje de atajo (Enter para filtrar).

@@ -8,9 +8,21 @@ Desde la raíz del repo:
 python3 agrocampo-cotizador-pdf/scripts/build_release_zip.py
 ```
 
-Salida esperada:
+Salida esperada por defecto:
 
-- `agrocampo-cotizador-pdf/dist/agrocampo-cotizador-pdf-vX.Y.Z.zip`
+- `dist-releases/agrocampo-cotizador-pdf-vX.Y.Z.zip` (fuera de la carpeta del plugin).
+
+También puedes personalizar la salida:
+
+```bash
+python3 agrocampo-cotizador-pdf/scripts/build_release_zip.py --out-dir /ruta/salidas
+```
+
+o vía variable de entorno:
+
+```bash
+ACPDF_RELEASE_OUT_DIR=/ruta/salidas python3 agrocampo-cotizador-pdf/scripts/build_release_zip.py
+```
 
 ## Automatizar en cada nueva versión
 
@@ -22,7 +34,8 @@ bash agrocampo-cotizador-pdf/scripts/install_git_hook.sh
 
 Con el hook `post-commit` instalado:
 
-- Cada vez que un commit incluya cambios en `agrocampo-cotizador-pdf/agrocampo-cotizador-pdf.php` (donde vive la versión),
+- Cada vez que un commit incluya cambios en `agrocampo-cotizador-pdf/agrocampo-cotizador-pdf.php`,
+- y detecte cambio real de versión (`X.Y.Z`),
 - se ejecutará automáticamente el empaquetado del ZIP versionado.
 
 ## Notas
