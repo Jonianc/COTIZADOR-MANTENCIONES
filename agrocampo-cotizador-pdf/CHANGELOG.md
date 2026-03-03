@@ -1,3 +1,7 @@
+## 1.3.39 (2026-03-03)
+- Corrige arrastre de datos de Reparación al cambiar a Mantención/Insumos: el frontend ahora limpia campos de reparación para cualquier tipo distinto de Reparación.
+- Endurece sanitización backend: cuando `quote_type` no es Reparación, también fuerza a cero `labor_hours`, `labor_rate`, `travel_amount` y `external_amount`.
+
 ## 1.3.38 (2026-03-03)
 - Insumos/Reparación UI: al cambiar tipo de cotización fuera de Reparación, limpia automáticamente campos de falla/diagnóstico y costos de reparación para evitar arrastre en borrador/payload.
 - Prefill: solo reinyecta `repair_issue`, `repair_diagnosis` y costos cuando la cotización prefijada es de tipo Reparación; en otros tipos los deja vacíos.

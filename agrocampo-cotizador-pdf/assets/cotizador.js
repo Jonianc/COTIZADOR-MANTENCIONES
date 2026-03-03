@@ -500,23 +500,23 @@ function setQuoteTypeUI(opts = {}) {
   $$('.acpdf-only-repair-cost').forEach(el => el.classList.toggle('hidden', !repair));
   $$('.acpdf-only-maint').forEach(el => el.classList.toggle('hidden', nonMaint));
 
-  if (nonMaint) {
-    // Limpiar campos exclusivos de reparación para evitar arrastre en Insumos
-    if (!repair) {
-      const repairIssue = document.querySelector('[name="repair_issue"]');
-      const repairDiagnosis = document.querySelector('[name="repair_diagnosis"]');
-      const laborHours = document.querySelector('[name="labor_hours"]');
-      const laborRate = document.querySelector('[name="labor_rate"]');
-      const travelAmount = document.querySelector('[name="travel_amount"]');
-      const externalAmount = document.querySelector('[name="external_amount"]');
-      if (repairIssue) repairIssue.value = '';
-      if (repairDiagnosis) repairDiagnosis.value = '';
-      if (laborHours) laborHours.value = '';
-      if (laborRate) laborRate.value = '';
-      if (travelAmount) travelAmount.value = '';
-      if (externalAmount) externalAmount.value = '';
-    }
+  // Limpiar campos exclusivos de reparación cuando el tipo no sea Reparación
+  if (!repair) {
+    const repairIssue = document.querySelector('[name="repair_issue"]');
+    const repairDiagnosis = document.querySelector('[name="repair_diagnosis"]');
+    const laborHours = document.querySelector('[name="labor_hours"]');
+    const laborRate = document.querySelector('[name="labor_rate"]');
+    const travelAmount = document.querySelector('[name="travel_amount"]');
+    const externalAmount = document.querySelector('[name="external_amount"]');
+    if (repairIssue) repairIssue.value = '';
+    if (repairDiagnosis) repairDiagnosis.value = '';
+    if (laborHours) laborHours.value = '';
+    if (laborRate) laborRate.value = '';
+    if (travelAmount) travelAmount.value = '';
+    if (externalAmount) externalAmount.value = '';
+  }
 
+  if (nonMaint) {
     // Force no template/precarga
     if (elTpl) elTpl.value = '';
     activeBrandKey = '';
