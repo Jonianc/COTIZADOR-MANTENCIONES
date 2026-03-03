@@ -179,11 +179,11 @@ include ACPDF_DIR . 'templates/partials/head.php';
                     <div class="muted small" style="margin-bottom:8px">Modo reparación/insumos: sin pauta y sin set de horas.</div>
                   </div>
 
-                  <div class="col-6 acpdf-only-nonmaint hidden">
+                  <div class="col-6 acpdf-only-repair hidden">
                     <label for="acpdf-repair-issue">Falla reportada</label>
                     <textarea name="repair_issue" id="acpdf-repair-issue" rows="2" placeholder="Describe la falla o motivo de reparación"></textarea>
                   </div>
-                  <div class="col-6 acpdf-only-nonmaint hidden">
+                  <div class="col-6 acpdf-only-repair hidden">
                     <label for="acpdf-repair-diagnosis">Diagnóstico / Observaciones</label>
                     <textarea name="repair_diagnosis" id="acpdf-repair-diagnosis" rows="2" placeholder="Diagnóstico, alcance, consideraciones"></textarea>
                   </div>

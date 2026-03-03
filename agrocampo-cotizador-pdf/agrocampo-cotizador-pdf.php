@@ -2,14 +2,14 @@
 /**
  * Plugin Name: Agrocampo – Cotizador PDF
  * Description: Cotizador frontend (sin theme) que genera cotizaciones en PDF.
- * Version: 1.3.36
+ * Version: 1.3.37
  * Author: Rocket Solutions
  * Requires PHP: 7.4
  */
 
 if (!defined('ABSPATH')) { exit; }
 
-define('ACPDF_VER', '1.3.36');
+define('ACPDF_VER', '1.3.37');
 define('ACPDF_SLUG', 'agrocampo-cotizador-pdf');
 define('ACPDF_DIR', plugin_dir_path(__FILE__));
 define('ACPDF_URL', plugin_dir_url(__FILE__));

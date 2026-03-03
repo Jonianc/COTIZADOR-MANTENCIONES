@@ -496,6 +496,7 @@ function setQuoteTypeUI(opts = {}) {
 
   // Toggle blocks
   $$('.acpdf-only-nonmaint').forEach(el => el.classList.toggle('hidden', !nonMaint));
+  $$('.acpdf-only-repair').forEach(el => el.classList.toggle('hidden', !repair));
   $$('.acpdf-only-repair-cost').forEach(el => el.classList.toggle('hidden', !repair));
   $$('.acpdf-only-maint').forEach(el => el.classList.toggle('hidden', nonMaint));
 

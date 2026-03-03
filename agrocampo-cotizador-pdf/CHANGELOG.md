@@ -1,3 +1,7 @@
+## 1.3.37 (2026-03-03)
+- En tipo de cotización Insumos, oculta los campos "Falla reportada" y "Diagnóstico / Observaciones" en el formulario frontend.
+- Endurece sanitización backend: `repair_issue` y `repair_diagnosis` se vacían automáticamente cuando el tipo no es Reparación.
+
 ## 1.3.36 (2026-03-03)
 - En pautas/plantillas precargadas, mueve el número de parte a la columna Código y deja en Detalle solo la descripción del ítem.
 - Conserva ediciones manuales del usuario al cambiar horas dentro de la misma pauta (no sobrescribe Código/Detalle ya editados).

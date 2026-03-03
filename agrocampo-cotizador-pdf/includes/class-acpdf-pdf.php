@@ -333,6 +333,10 @@ return $d.' de '.$mm.' del '.$y;
 
         $repair_issue = trim(wp_kses_post(wp_unslash($post['repair_issue'] ?? '')));
         $repair_diagnosis = trim(wp_kses_post(wp_unslash($post['repair_diagnosis'] ?? '')));
+        if ($quote_type !== 'repair') {
+            $repair_issue = '';
+            $repair_diagnosis = '';
+        }
         $labor_hours = self::parse_float($get('labor_hours', ''));
         $labor_rate = self::parse_money($get('labor_rate', ''));
         $travel_amount = self::parse_money($get('travel_amount', ''));
