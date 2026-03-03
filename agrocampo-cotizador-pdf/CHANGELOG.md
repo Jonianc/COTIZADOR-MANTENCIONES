@@ -1,3 +1,7 @@
+## 1.3.36 (2026-03-03)
+- En pautas/plantillas precargadas, mueve el número de parte a la columna Código y deja en Detalle solo la descripción del ítem.
+- Conserva ediciones manuales del usuario al cambiar horas dentro de la misma pauta (no sobrescribe Código/Detalle ya editados).
+
 ## 1.3.35 (2026-03-03)
 - Optimiza flujo `PREFILL` con pauta: `applyTemplate()` ahora permite `autosave: false` para evitar programar guardados automáticos en cambios programáticos.
 - En `applyPrefill`, las llamadas a `applyTemplate()` desactivan autosave explícitamente, reduciendo side-effects y evitando recreación de borradores.

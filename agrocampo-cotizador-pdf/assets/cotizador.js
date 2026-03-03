@@ -772,8 +772,8 @@ syncModelFieldState(null);
     if (qty > 0) {
       const itemId = tplItemId(it);
       addRow({
-        code: '',
-        detail: (it.desc + ' - ' + it.part),
+        code: (it.part || ''),
+        detail: (it.desc || ''),
         unit_price: '',
         unit: it.unit || 'UN',
         discount: '',
@@ -826,8 +826,8 @@ function rebuildTemplateForHour() {
     const prev = saved.get(itemId) || {};
 
     addRow({
-      code: prev.code || '',
-      detail: (prev.detail && String(prev.detail).trim()) ? prev.detail : (it.desc + ' - ' + it.part),
+      code: (prev.code && String(prev.code).trim()) ? prev.code : (it.part || ''),
+      detail: (prev.detail && String(prev.detail).trim()) ? prev.detail : (it.desc || ''),
       unit_price: prev.unit_price || '',
       unit: (prev.unit && String(prev.unit).trim()) ? prev.unit : (it.unit || 'UN'),
       discount: prev.discount || '',
