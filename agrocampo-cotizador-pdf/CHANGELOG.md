@@ -1,3 +1,7 @@
+## 1.3.35 (2026-03-03)
+- Optimiza flujo `PREFILL` con pauta: `applyTemplate()` ahora permite `autosave: false` para evitar programar guardados automáticos en cambios programáticos.
+- En `applyPrefill`, las llamadas a `applyTemplate()` desactivan autosave explícitamente, reduciendo side-effects y evitando recreación de borradores.
+
 ## 1.3.34 (2026-03-03)
 - Corrige recreación de borradores en flujo `PREFILL`: `clearLocalStorage()` ahora cancela autosaves debounced pendientes antes de limpiar `localStorage`.
 - Ajusta helper `debounce()` para exponer `cancel()`, permitiendo evitar condiciones de carrera cuando hay cambios programáticos (ej. `applyTemplate()` durante prefill).

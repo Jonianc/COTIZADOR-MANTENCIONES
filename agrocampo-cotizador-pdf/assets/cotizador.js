@@ -726,9 +726,10 @@ function initDragDrop() {
 initDragDrop();
 
 // ============ TEMPLATES ============
-function applyTemplate(brandKey, tplKey) {
+function applyTemplate(brandKey, tplKey, opts = {}) {
   const bKey = String(brandKey || '').trim();
   const tKey = String(tplKey || '').trim();
+  const shouldAutosave = opts.autosave !== false;
 
   activeBrandKey = bKey;
   activeTemplateKey = tKey;
@@ -784,7 +785,9 @@ syncModelFieldState(null);
   renumber();
   updateTitle();
   calcTotals();
-  triggerAutosave();
+  if (shouldAutosave) {
+    triggerAutosave();
+  }
 }
 
 function rebuildTemplateForHour() {
@@ -890,13 +893,13 @@ function applyPrefill(d) {
     elTpl.value = String(d.template_key);
     if (d.maint_hours) {
       // applyTemplate will ensure hour belongs to the template hours; set desired hour after fillHours()
-      applyTemplate(elBrand.value, elTpl.value);
+      applyTemplate(elBrand.value, elTpl.value, { autosave: false });
       if (d.maint_hours) {
         elHours.value = String(d.maint_hours);
         rebuildTemplateForHour();
       }
     } else {
-      applyTemplate(elBrand.value, elTpl.value);
+      applyTemplate(elBrand.value, elTpl.value, { autosave: false });
     }
     return;
   } else {
