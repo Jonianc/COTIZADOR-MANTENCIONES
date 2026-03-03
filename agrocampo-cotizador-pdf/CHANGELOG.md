@@ -1,3 +1,7 @@
+## 1.3.38 (2026-03-03)
+- Insumos/Reparación UI: al cambiar tipo de cotización fuera de Reparación, limpia automáticamente campos de falla/diagnóstico y costos de reparación para evitar arrastre en borrador/payload.
+- Prefill: solo reinyecta `repair_issue`, `repair_diagnosis` y costos cuando la cotización prefijada es de tipo Reparación; en otros tipos los deja vacíos.
+
 ## 1.3.37 (2026-03-03)
 - En tipo de cotización Insumos, oculta los campos "Falla reportada" y "Diagnóstico / Observaciones" en el formulario frontend.
 - Endurece sanitización backend: `repair_issue` y `repair_diagnosis` se vacían automáticamente cuando el tipo no es Reparación.

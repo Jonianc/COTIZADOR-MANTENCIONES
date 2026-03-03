@@ -501,6 +501,22 @@ function setQuoteTypeUI(opts = {}) {
   $$('.acpdf-only-maint').forEach(el => el.classList.toggle('hidden', nonMaint));
 
   if (nonMaint) {
+    // Limpiar campos exclusivos de reparación para evitar arrastre en Insumos
+    if (!repair) {
+      const repairIssue = document.querySelector('[name="repair_issue"]');
+      const repairDiagnosis = document.querySelector('[name="repair_diagnosis"]');
+      const laborHours = document.querySelector('[name="labor_hours"]');
+      const laborRate = document.querySelector('[name="labor_rate"]');
+      const travelAmount = document.querySelector('[name="travel_amount"]');
+      const externalAmount = document.querySelector('[name="external_amount"]');
+      if (repairIssue) repairIssue.value = '';
+      if (repairDiagnosis) repairDiagnosis.value = '';
+      if (laborHours) laborHours.value = '';
+      if (laborRate) laborRate.value = '';
+      if (travelAmount) travelAmount.value = '';
+      if (externalAmount) externalAmount.value = '';
+    }
+
     // Force no template/precarga
     if (elTpl) elTpl.value = '';
     activeBrandKey = '';
@@ -874,12 +890,22 @@ function applyPrefill(d) {
   setField('hours_manual', d.hours_manual);
   setField('maint_hours', d.maint_hours);
   setField('parts_type', d.parts_type);
-  setField('repair_issue', d.repair_issue);
-  setField('repair_diagnosis', d.repair_diagnosis);
-  setField('labor_hours', d.labor_hours);
-  setField('labor_rate', d.labor_rate);
-  setField('travel_amount', d.travel_amount);
-  setField('external_amount', d.external_amount);
+  const prefillQuoteType = String(d.quote_type || 'maintenance');
+  if (prefillQuoteType === 'repair') {
+    setField('repair_issue', d.repair_issue);
+    setField('repair_diagnosis', d.repair_diagnosis);
+    setField('labor_hours', d.labor_hours);
+    setField('labor_rate', d.labor_rate);
+    setField('travel_amount', d.travel_amount);
+    setField('external_amount', d.external_amount);
+  } else {
+    setField('repair_issue', '');
+    setField('repair_diagnosis', '');
+    setField('labor_hours', '');
+    setField('labor_rate', '');
+    setField('travel_amount', '');
+    setField('external_amount', '');
+  }
   setField('observations', d.observations);
 
 
