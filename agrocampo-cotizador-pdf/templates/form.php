@@ -142,8 +142,9 @@ include ACPDF_DIR . 'templates/partials/head.php';
                     <select name="quote_type" id="acpdf-quote-type">
                       <option value="maintenance">Mantención</option>
                       <option value="repair">Reparación</option>
+                      <option value="insumos">Insumos</option>
                     </select>
-                    <div class="muted small">Reparación es sin precarga (sin pauta).</div>
+                    <div class="muted small">Reparación e Insumos son sin precarga (sin pauta).</div>
                   </div>
 
 
@@ -173,33 +174,33 @@ include ACPDF_DIR . 'templates/partials/head.php';
                     <div class="muted small">Automático: Modelo + tipo mantención.</div>
                   </div>
                   <!-- Reparación (sin precarga) -->
-                  <div class="col-12 acpdf-only-repair hidden" id="acpdf-repair-wrap">
+                  <div class="col-12 acpdf-only-nonmaint hidden" id="acpdf-repair-wrap">
                     <div class="divider"></div>
-                    <div class="muted small" style="margin-bottom:8px">Modo reparación: sin pauta y sin set de horas.</div>
+                    <div class="muted small" style="margin-bottom:8px">Modo reparación/insumos: sin pauta y sin set de horas.</div>
                   </div>
 
-                  <div class="col-6 acpdf-only-repair hidden">
+                  <div class="col-6 acpdf-only-nonmaint hidden">
                     <label for="acpdf-repair-issue">Falla reportada</label>
                     <textarea name="repair_issue" id="acpdf-repair-issue" rows="2" placeholder="Describe la falla o motivo de reparación"></textarea>
                   </div>
-                  <div class="col-6 acpdf-only-repair hidden">
+                  <div class="col-6 acpdf-only-nonmaint hidden">
                     <label for="acpdf-repair-diagnosis">Diagnóstico / Observaciones</label>
                     <textarea name="repair_diagnosis" id="acpdf-repair-diagnosis" rows="2" placeholder="Diagnóstico, alcance, consideraciones"></textarea>
                   </div>
 
-                  <div class="col-3 acpdf-only-repair hidden">
+                  <div class="col-3 acpdf-only-repair-cost hidden">
                     <label for="acpdf-labor-hours">Mano de obra (HH)</label>
                     <input type="number" step="0.01" min="0" name="labor_hours" id="acpdf-labor-hours" placeholder="Ej: 3.5" />
                   </div>
-                  <div class="col-3 acpdf-only-repair hidden">
+                  <div class="col-3 acpdf-only-repair-cost hidden">
                     <label for="acpdf-labor-rate">Valor HH (neto)</label>
                     <input type="number" step="1" min="0" name="labor_rate" id="acpdf-labor-rate" placeholder="Ej: 25000" />
                   </div>
-                  <div class="col-3 acpdf-only-repair hidden">
+                  <div class="col-3 acpdf-only-repair-cost hidden">
                     <label for="acpdf-travel">Traslado (neto)</label>
                     <input type="number" step="1" min="0" name="travel_amount" id="acpdf-travel" placeholder="Ej: 15000" />
                   </div>
-                  <div class="col-3 acpdf-only-repair hidden">
+                  <div class="col-3 acpdf-only-repair-cost hidden">
                     <label for="acpdf-external">Servicios externos (neto)</label>
                     <input type="number" step="1" min="0" name="external_amount" id="acpdf-external" placeholder="Ej: 30000" />
                   </div>

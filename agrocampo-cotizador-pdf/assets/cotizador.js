@@ -400,6 +400,10 @@ function updateTitle() {
     elTitle.value = ((m ? (m + ' ') : '') + 'REPARACION').trim();
     return;
   }
+  if (qt === 'insumos') {
+    elTitle.value = ((m ? (m + ' ') : '') + 'INSUMOS').trim();
+    return;
+  }
   const h = (elHours.value || '').trim();
   elTitle.value = ((m ? (m + ' ') : '') + 'MANTENCION ' + h + ' HORAS').trim();
 }
@@ -407,6 +411,14 @@ function updateTitle() {
 
 function isRepairMode() {
   return (elQuoteType && String(elQuoteType.value || '') === 'repair');
+}
+
+function isInsumosMode() {
+  return (elQuoteType && String(elQuoteType.value || '') === 'insumos');
+}
+
+function isNonMaintenanceMode() {
+  return isRepairMode() || isInsumosMode();
 }
 
 function updateHoursSetOptionLabels() {
@@ -461,25 +473,27 @@ function syncHoursSetOptions() {
       elHoursSet.value = lockedSet;
     }
 
-    if (!isRepairMode()) {
+    if (!isNonMaintenanceMode()) {
       elHoursSet.disabled = true;
     }
     return;
   }
 
-  if (!isRepairMode()) {
+  if (!isNonMaintenanceMode()) {
     elHoursSet.disabled = false;
   }
 }
 
 function setQuoteTypeUI() {
   const repair = isRepairMode();
+  const nonMaint = isNonMaintenanceMode();
 
   // Toggle blocks
-  $$('.acpdf-only-repair').forEach(el => el.classList.toggle('hidden', !repair));
-  $$('.acpdf-only-maint').forEach(el => el.classList.toggle('hidden', repair));
+  $$('.acpdf-only-nonmaint').forEach(el => el.classList.toggle('hidden', !nonMaint));
+  $$('.acpdf-only-repair-cost').forEach(el => el.classList.toggle('hidden', !repair));
+  $$('.acpdf-only-maint').forEach(el => el.classList.toggle('hidden', nonMaint));
 
-  if (repair) {
+  if (nonMaint) {
     // Force no template/precarga
     if (elTpl) elTpl.value = '';
     activeBrandKey = '';
@@ -523,7 +537,7 @@ function refreshHoursSetManualOption() {
   }
 
   // Manual only when no precarga (no template) and not repair
-  const allowManual = (!hasTemplate) && !isRepairMode();
+  const allowManual = (!hasTemplate) && !isNonMaintenanceMode();
   opt.disabled = !allowManual;
   opt.hidden = !allowManual;
 
@@ -841,6 +855,7 @@ function applyPrefill(d) {
   setField('model', d.model);
   setField('location', d.location);
   setField('quote_type', d.quote_type);
+  setQuoteTypeUI();
   setField('brand_key', d.brand_key);
   setField('template_key', d.template_key);
   setField('hours_set', d.hours_set);
@@ -971,7 +986,7 @@ function validateForm() {
     }
   }
 
-  if (!isRepairMode()) {
+  if (!isNonMaintenanceMode()) {
     if (elHoursSet && String(elHoursSet.value || '') === 'MANUAL') {
       const manualVal = parseNum(elHoursManual?.value);
       if (!manualVal || manualVal <= 0) {
@@ -1264,6 +1279,7 @@ fillBrandOptions();
 fillTemplateOptions();
 fillHours();
 syncModelFieldState(null);
+setQuoteTypeUI();
 
 // Check for saved draft (only if no prefill)
 if (PREFILL) {

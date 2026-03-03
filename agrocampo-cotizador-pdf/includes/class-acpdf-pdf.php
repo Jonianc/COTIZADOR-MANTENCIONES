@@ -325,7 +325,11 @@ return $d.' de '.$mm.' del '.$y;
         $internal_no = preg_replace('/[^0-9]/', '', $get('internal_no', ''));
         $serial_no = preg_replace('/[^a-zA-Z0-9-]/', '', $get('serial_no', ''));
 
-        $quote_type = ($get('quote_type', 'maintenance') === 'repair') ? 'repair' : 'maintenance';
+        $raw_quote_type = sanitize_key($get('quote_type', 'maintenance'));
+        if (!in_array($raw_quote_type, ['maintenance', 'repair', 'insumos'], true)) {
+            $raw_quote_type = 'maintenance';
+        }
+        $quote_type = $raw_quote_type;
 
         $repair_issue = trim(wp_kses_post(wp_unslash($post['repair_issue'] ?? '')));
         $repair_diagnosis = trim(wp_kses_post(wp_unslash($post['repair_diagnosis'] ?? '')));
@@ -606,6 +610,8 @@ return $d.' de '.$mm.' del '.$y;
         $qt = ($payload['quote_type'] ?? 'maintenance');
         if ($qt === 'repair') {
             $title = trim(($payload['model'] ? $payload['model'].' ' : '') . 'REPARACION');
+        } elseif ($qt === 'insumos') {
+            $title = trim(($payload['model'] ? $payload['model'].' ' : '') . 'INSUMOS');
         } else {
             $title = trim(($payload['model'] ? $payload['model'].' ' : '') . 'MANTENCION ' . $payload['maint_hours'] . ' HORAS');
         }

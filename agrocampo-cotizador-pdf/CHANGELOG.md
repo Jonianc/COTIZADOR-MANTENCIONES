@@ -1,3 +1,9 @@
+## 1.3.32 (2026-03-03)
+- Agrega tipo de cotización **Insumos** en el formulario frontend.
+- Modo Insumos funciona similar a Reparación: sin pauta ni set/tipo de horas.
+- En Insumos no se muestran campos/costos de mano de obra, traslado ni servicios externos.
+- Backend/PDF ahora aceptan `quote_type=insumos` y generan título `MODELO INSUMOS`.
+
 ## 1.3.31 (2026-02-13)
 - UX Gestor (iteración 2): tabla del gestor con clase dedicada (`gestor-table`) y mejoras de escaneo visual (zebra suave, hover más claro, acciones con mejor estabilidad de ancho).
 - UX filtros/paginación: barra sticky con mejor jerarquía visual y foco accesible; paginación con estado actual más visible.
