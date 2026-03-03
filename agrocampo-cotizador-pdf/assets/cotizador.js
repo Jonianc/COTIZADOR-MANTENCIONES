@@ -484,9 +484,10 @@ function syncHoursSetOptions() {
   }
 }
 
-function setQuoteTypeUI() {
+function setQuoteTypeUI(opts = {}) {
   const repair = isRepairMode();
   const nonMaint = isNonMaintenanceMode();
+  const shouldAutosave = !!opts.autosave;
 
   // Toggle blocks
   $$('.acpdf-only-nonmaint').forEach(el => el.classList.toggle('hidden', !nonMaint));
@@ -518,7 +519,9 @@ function setQuoteTypeUI() {
     refreshHoursSetManualOption();
     fillHours();
   }
-  triggerAutosave();
+  if (shouldAutosave) {
+    triggerAutosave();
+  }
 }
 
 function refreshHoursSetManualOption() {
@@ -855,7 +858,7 @@ function applyPrefill(d) {
   setField('model', d.model);
   setField('location', d.location);
   setField('quote_type', d.quote_type);
-  setQuoteTypeUI();
+  setQuoteTypeUI({ autosave: false });
   setField('brand_key', d.brand_key);
   setField('template_key', d.template_key);
   setField('hours_set', d.hours_set);
@@ -1210,7 +1213,7 @@ elBrand.addEventListener('change', () => {
 
 if (elQuoteType) {
   elQuoteType.addEventListener('change', () => {
-    setQuoteTypeUI();
+    setQuoteTypeUI({ autosave: true });
   });
 }
 
@@ -1279,7 +1282,7 @@ fillBrandOptions();
 fillTemplateOptions();
 fillHours();
 syncModelFieldState(null);
-setQuoteTypeUI();
+setQuoteTypeUI({ autosave: false });
 
 // Check for saved draft (only if no prefill)
 if (PREFILL) {

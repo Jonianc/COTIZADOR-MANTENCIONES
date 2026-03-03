@@ -1,3 +1,7 @@
+## 1.3.33 (2026-03-03)
+- Corrige autosave en cambios programáticos de tipo de cotización: `setQuoteTypeUI()` ahora solo guarda borrador cuando se invoca con `autosave: true`.
+- Evita re-crear borradores en inicialización y flujo `PREFILL`, eliminando la carrera con `clearLocalStorage()` y el prompt de recuperación innecesario.
+
 ## 1.3.32 (2026-03-03)
 - Agrega tipo de cotización **Insumos** en el formulario frontend.
 - Modo Insumos funciona similar a Reparación: sin pauta ni set/tipo de horas.
