@@ -59,10 +59,15 @@ function parseNum(v) {
 
 function debounce(fn, ms) {
   let timer;
-  return function(...args) {
+  const wrapped = function(...args) {
     clearTimeout(timer);
     timer = setTimeout(() => fn.apply(this, args), ms);
   };
+  wrapped.cancel = () => {
+    if (timer) clearTimeout(timer);
+    timer = null;
+  };
+  return wrapped;
 }
 
 function escapeHtml(str) {
@@ -1137,6 +1142,9 @@ function loadFromLocalStorage() {
 }
 
 function clearLocalStorage() {
+  if (typeof triggerAutosave.cancel === 'function') {
+    triggerAutosave.cancel();
+  }
   localStorage.removeItem(AUTOSAVE_KEY);
 }
 

@@ -1,3 +1,7 @@
+## 1.3.34 (2026-03-03)
+- Corrige recreación de borradores en flujo `PREFILL`: `clearLocalStorage()` ahora cancela autosaves debounced pendientes antes de limpiar `localStorage`.
+- Ajusta helper `debounce()` para exponer `cancel()`, permitiendo evitar condiciones de carrera cuando hay cambios programáticos (ej. `applyTemplate()` durante prefill).
+
 ## 1.3.33 (2026-03-03)
 - Corrige autosave en cambios programáticos de tipo de cotización: `setQuoteTypeUI()` ahora solo guarda borrador cuando se invoca con `autosave: true`.
 - Evita re-crear borradores en inicialización y flujo `PREFILL`, eliminando la carrera con `clearLocalStorage()` y el prompt de recuperación innecesario.
