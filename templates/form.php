@@ -114,11 +114,12 @@ include ACPDF_DIR . 'templates/partials/head.php';
                     <label for="acpdf-brand">Marca</label>
                     <select name="brand_key" id="acpdf-brand">
                       <option value="massey_ferguson">Massey Ferguson</option>
+                      <option value="other_brand">Otra marca</option>
                     </select>
                     <div class="muted small">Selecciona la marca para filtrar pautas.</div>
                   </div>
 
-                  <div class="col-4 acpdf-only-maint">
+                  <div class="col-4 acpdf-only-maint" id="acpdf-template-wrap">
                     <label for="acpdf-template">Pauta (precarga)</label>
                     <select name="template_key" id="acpdf-template">
                       <option value="">— Sin precarga —</option>
@@ -126,9 +127,17 @@ include ACPDF_DIR . 'templates/partials/head.php';
                     <div class="muted small">Selecciona una pauta para cargar ítems automáticamente.</div>
                   </div>
 
-                  <div class="col-4">
+                  <div class="col-4" id="acpdf-model-wrap">
                     <label for="acpdf-model">Modelo <span class="required">*</span></label>
-                    <input name="model" id="acpdf-model" required placeholder="Ej: MF 4275" />
+                    <input name="model" id="acpdf-model" placeholder="Ej: MF 4275" />
+                  </div>
+                  <div class="col-4 acpdf-only-maint hidden" id="acpdf-brand-manual-wrap">
+                    <label for="acpdf-brand-manual">Marca <span class="required">*</span></label>
+                    <input name="brand_manual" id="acpdf-brand-manual" placeholder="Ej: John Deere" />
+                  </div>
+                  <div class="col-4 acpdf-only-maint hidden" id="acpdf-model-manual-wrap">
+                    <label for="acpdf-model-manual">Modelo <span class="required">*</span></label>
+                    <input name="model_manual" id="acpdf-model-manual" placeholder="Ej: 6110J" />
                   </div>
 
                   <!-- Fila 4: Configuración mantención -->

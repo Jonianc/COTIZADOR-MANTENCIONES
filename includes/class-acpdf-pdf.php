@@ -321,6 +321,11 @@ return $d.' de '.$mm.' del '.$y;
 
         $maint_hours = preg_replace('/[^0-9]/', '', $get('maint_hours', '100'));
         if ($maint_hours === '') $maint_hours = '100';
+        $brand_key = sanitize_key($get('brand_key', ''));
+        $template_key = sanitize_key($get('template_key', ''));
+        $brand_manual = trim(sanitize_text_field(wp_unslash($post['brand_manual'] ?? '')));
+        $model_manual = trim(sanitize_text_field(wp_unslash($post['model_manual'] ?? '')));
+        $model = $get('model', '');
 
         $internal_no = preg_replace('/[^0-9]/', '', $get('internal_no', ''));
         $serial_no = preg_replace('/[^a-zA-Z0-9-]/', '', $get('serial_no', ''));
@@ -351,6 +356,19 @@ return $d.' de '.$mm.' del '.$y;
             $labor_rate = 0;
             $travel_amount = 0;
             $external_amount = 0;
+        }
+
+        if ($quote_type === 'maintenance' && $brand_key === 'other_brand') {
+            $template_key = '';
+            $manual_parts = array_values(array_filter([$brand_manual, $model_manual], function($v){
+                return trim((string)$v) !== '';
+            }));
+            if (!empty($manual_parts)) {
+                $model = implode(' ', $manual_parts);
+            }
+        } else {
+            $brand_manual = '';
+            $model_manual = '';
         }
 
         // Seller selection (multi-seller). Fallback to legacy settings.
@@ -386,10 +404,12 @@ return $d.' de '.$mm.' del '.$y;
             'client' => $get('client', ''),
             'phone' => $get('phone', ''),
             'email' => sanitize_email(wp_unslash($post['email'] ?? '')),
-            'model' => $get('model', ''),
+            'model' => $model,
             // Templates (for pautas / Cantidad por Máquina)
-            'brand_key' => sanitize_key($get('brand_key', '')),
-            'template_key' => sanitize_key($get('template_key', '')),
+            'brand_key' => $brand_key,
+            'template_key' => $template_key,
+            'brand_manual' => $brand_manual,
+            'model_manual' => $model_manual,
             'hours_set' => sanitize_key($get('hours_set', 'A')),
             'hours_manual' => sanitize_text_field(wp_unslash($post['hours_manual'] ?? '')),
             'location' => $get('location', ''),

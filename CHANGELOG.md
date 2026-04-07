@@ -1,3 +1,10 @@
+## 1.3.41 (2026-04-07)
+- Mantención: agrega opción de marca `Otra marca` en el selector de marca.
+- Si `Marca = Otra marca`, el formulario oculta pauta y modelo normal, y muestra campos manuales obligatorios `Marca` y `Modelo`.
+- Mantiene flujo de Mantención con selector de horas activo, sin precarga automática por pauta/modelo cuando se usa `Otra marca`.
+- Frontend: valida con mensajes claros cuando faltan `Marca` o `Modelo` manual.
+- Backend: sanitiza `brand_manual`/`model_manual`, omite `template_key` para `other_brand` y usa datos manuales para componer el `model` persistido (PDF, gestor/listados y resumen/prefill).
+
 ## 1.3.40 (2026-04-07)
 - Reemplaza tipo de cotización `Insumos` por `Otro` en formulario; nuevas cotizaciones usan `quote_type=other`.
 - Agrega campo obligatorio `Detalle de cotización` visible solo en tipo `Otro`; se valida en frontend y backend antes de generar PDF/vista previa.
