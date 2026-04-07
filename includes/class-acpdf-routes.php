@@ -369,6 +369,24 @@ class ACPDF_Routes {
         echo wp_json_encode(['next' => $next]);
     }
 
+    protected static function should_reject_missing_other_detail(array $payload, array $request) {
+        if (($payload['quote_type'] ?? '') !== 'other') {
+            return false;
+        }
+
+        if (trim((string)($payload['quote_detail'] ?? '')) !== '') {
+            return false;
+        }
+
+        // Backward compatibility: stale clients may still submit "insumos" without quote_detail.
+        $raw_quote_type = sanitize_key(sanitize_text_field(wp_unslash($request['quote_type'] ?? '')));
+        if ($raw_quote_type === 'insumos') {
+            return false;
+        }
+
+        return true;
+    }
+
     protected static function handle_pdf() {
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
             status_header(405);
@@ -379,15 +397,8 @@ class ACPDF_Routes {
             exit('Forbidden');
         }
 
-        $raw_quote_type = sanitize_key(sanitize_text_field(wp_unslash($_POST['quote_type'] ?? '')));
-        $is_legacy_insumos = ($raw_quote_type === 'insumos');
-
         $payload = ACPDF_PDF::sanitize_payload($_POST);
-        if (
-            !$is_legacy_insumos &&
-            ($payload['quote_type'] ?? '') === 'other' &&
-            trim((string)($payload['quote_detail'] ?? '')) === ''
-        ) {
+        if (self::should_reject_missing_other_detail($payload, $_POST)) {
             status_header(400);
             exit('Detalle de cotización es obligatorio para tipo Otro.');
         }
@@ -404,15 +415,8 @@ class ACPDF_Routes {
             exit('Forbidden');
         }
 
-        $raw_quote_type = sanitize_key(sanitize_text_field(wp_unslash($_POST['quote_type'] ?? '')));
-        $is_legacy_insumos = ($raw_quote_type === 'insumos');
-
         $payload = ACPDF_PDF::sanitize_payload($_POST);
-        if (
-            !$is_legacy_insumos &&
-            ($payload['quote_type'] ?? '') === 'other' &&
-            trim((string)($payload['quote_detail'] ?? '')) === ''
-        ) {
+        if (self::should_reject_missing_other_detail($payload, $_POST)) {
             status_header(400);
             exit('Detalle de cotización es obligatorio para tipo Otro.');
         }
