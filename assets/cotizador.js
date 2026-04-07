@@ -310,10 +310,13 @@ function fillTemplateOptions(){
 
 function syncBrandModeUI() {
   const otherBrand = isOtherBrandMode();
-  if (elTemplateWrap) elTemplateWrap.classList.toggle('hidden', otherBrand);
-  if (elModelWrap) elModelWrap.classList.toggle('hidden', otherBrand);
-  if (elBrandManualWrap) elBrandManualWrap.classList.toggle('hidden', !otherBrand);
-  if (elModelManualWrap) elModelManualWrap.classList.toggle('hidden', !otherBrand);
+  const nonMaint = isNonMaintenanceMode();
+
+  if (elTemplateWrap) elTemplateWrap.classList.toggle('hidden', nonMaint || otherBrand);
+  if (elHoursSetWrap) elHoursSetWrap.classList.toggle('hidden', nonMaint || otherBrand);
+  if (elModelWrap) elModelWrap.classList.toggle('hidden', !nonMaint && otherBrand);
+  if (elBrandManualWrap) elBrandManualWrap.classList.toggle('hidden', nonMaint || !otherBrand);
+  if (elModelManualWrap) elModelManualWrap.classList.toggle('hidden', nonMaint || !otherBrand);
 
   if (elModel) elModel.required = !otherBrand && !isNonMaintenanceMode();
   if (elBrandManual) elBrandManual.required = otherBrand;
@@ -337,7 +340,12 @@ function syncBrandModeState() {
   syncBrandModeUI();
   if (!isOtherBrandMode()) return;
   clearTemplateSelectionForOtherBrand();
+  if (elHoursSet) {
+    elHoursSet.value = 'MANUAL';
+    elHoursSet.disabled = true;
+  }
   refreshHoursSetManualOption();
+  setManualHoursUI();
   fillHours();
   syncModelForOtherBrand();
   syncModelFieldState(null);

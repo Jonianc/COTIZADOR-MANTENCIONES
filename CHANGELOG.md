@@ -1,3 +1,9 @@
+## 1.3.42 (2026-04-07)
+- Corrige regresión UI: `syncBrandModeUI` ya no vuelve a mostrar bloques de Mantención en tipos `Reparación/Otro`.
+- En `Marca = Otra marca` (Mantención), oculta completamente `Set de horas` y fuerza modo de horas manual (`hours_set=MANUAL`).
+- Mantiene sin pautas, sin sets predefinidos y sin precarga automática en `other_brand`.
+- Conserva obligatorios `Marca` y `Modelo` manual y uso de datos manuales en PDF/gestor/listados/resumen.
+
 ## 1.3.41 (2026-04-07)
 - Mantención: agrega opción de marca `Otra marca` en el selector de marca.
 - Si `Marca = Otra marca`, el formulario oculta pauta y modelo normal, y muestra campos manuales obligatorios `Marca` y `Modelo`.
