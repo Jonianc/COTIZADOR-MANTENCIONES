@@ -1,3 +1,25 @@
+## 1.3.44 (2026-04-07)
+- En `Marca = Otra marca`, agrega label visible para el input manual de horas (`Tipo mantención (horas)`).
+- Mantiene oculto el selector `Set de horas` y conserva el flujo manual sin pautas/precarga para `other_brand`.
+
+## 1.3.43 (2026-04-07)
+- Corrige visibilidad en `Marca = Otra marca`: vuelve a mostrarse el input manual de horas.
+- En `other_brand`, se oculta solo el selector `Set de horas` (label + select), manteniendo horas manuales visibles.
+- Mantiene el comportamiento sin pautas, sin sets predefinidos y sin precarga automática para `other_brand`.
+
+## 1.3.42 (2026-04-07)
+- Corrige regresión UI: `syncBrandModeUI` ya no vuelve a mostrar bloques de Mantención en tipos `Reparación/Otro`.
+- En `Marca = Otra marca` (Mantención), oculta completamente `Set de horas` y fuerza modo de horas manual (`hours_set=MANUAL`).
+- Mantiene sin pautas, sin sets predefinidos y sin precarga automática en `other_brand`.
+- Conserva obligatorios `Marca` y `Modelo` manual y uso de datos manuales en PDF/gestor/listados/resumen.
+
+## 1.3.41 (2026-04-07)
+- Mantención: agrega opción de marca `Otra marca` en el selector de marca.
+- Si `Marca = Otra marca`, el formulario oculta pauta y modelo normal, y muestra campos manuales obligatorios `Marca` y `Modelo`.
+- Mantiene flujo de Mantención con selector de horas activo, sin precarga automática por pauta/modelo cuando se usa `Otra marca`.
+- Frontend: valida con mensajes claros cuando faltan `Marca` o `Modelo` manual.
+- Backend: sanitiza `brand_manual`/`model_manual`, omite `template_key` para `other_brand` y usa datos manuales para componer el `model` persistido (PDF, gestor/listados y resumen/prefill).
+
 ## 1.3.40 (2026-04-07)
 - Reemplaza tipo de cotización `Insumos` por `Otro` en formulario; nuevas cotizaciones usan `quote_type=other`.
 - Agrega campo obligatorio `Detalle de cotización` visible solo en tipo `Otro`; se valida en frontend y backend antes de generar PDF/vista previa.

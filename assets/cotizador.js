@@ -15,11 +15,19 @@ const elForm     = id('acpdf-form');
 const elHoursSet = id('acpdf-hours-set');
 const elHours    = id('acpdf-hours');
 const elModel    = id('acpdf-model');
+const elModelWrap = id('acpdf-model-wrap');
+const elModelManual = id('acpdf-model-manual');
+const elModelManualWrap = id('acpdf-model-manual-wrap');
+const elBrandManual = id('acpdf-brand-manual');
+const elBrandManualWrap = id('acpdf-brand-manual-wrap');
+const elTemplateWrap = id('acpdf-template-wrap');
 const elTitle    = id('acpdf-title');
 const elBrand    = id('acpdf-brand');
 const elTpl      = id('acpdf-template');
 const elQuoteType = id('acpdf-quote-type');
 const elHoursSetWrap = id('acpdf-hours-set-wrap');
+const elHoursSetLabel = document.querySelector('label[for="acpdf-hours-set"]');
+const elHoursManualLabel = id('acpdf-hours-manual-label');
 const elHoursWrap = id('acpdf-hours-wrap');
 const elHoursManual = id('acpdf-hours-manual');
 const elHoursManualHelp = id('acpdf-hours-manual-help');
@@ -248,25 +256,30 @@ function fillBrandOptions(){
   const prev = String(elBrand.value || '').trim();
   elBrand.innerHTML = '';
   const keys = Object.keys(CATALOG);
-  if (!keys.length) {
-    const opt = document.createElement('option');
-    opt.value = '';
-    opt.textContent = '— Sin marcas —';
-    elBrand.appendChild(opt);
-    return;
+  if (keys.length) {
+    keys.forEach(k => {
+      const opt = document.createElement('option');
+      opt.value = k;
+      opt.textContent = (CATALOG[k] && CATALOG[k].label) ? CATALOG[k].label : k;
+      elBrand.appendChild(opt);
+    });
   }
-  keys.forEach(k => {
-    const opt = document.createElement('option');
-    opt.value = k;
-    opt.textContent = (CATALOG[k] && CATALOG[k].label) ? CATALOG[k].label : k;
-    elBrand.appendChild(opt);
-  });
-  if (prev && keys.includes(prev)) {
+
+  const optOther = document.createElement('option');
+  optOther.value = 'other_brand';
+  optOther.textContent = 'Otra marca';
+  elBrand.appendChild(optOther);
+
+  if (prev === 'other_brand') {
+    elBrand.value = 'other_brand';
+  } else if (prev && keys.includes(prev)) {
     elBrand.value = prev;
   } else if (keys.includes('massey_ferguson')) {
     elBrand.value = 'massey_ferguson';
-  } else {
+  } else if (keys.length) {
     elBrand.value = keys[0];
+  } else {
+    elBrand.value = 'other_brand';
   }
 }
 
@@ -279,6 +292,8 @@ function fillTemplateOptions(){
   opt0.value = '';
   opt0.textContent = '— Sin precarga —';
   elTpl.appendChild(opt0);
+
+  if (brandKey === 'other_brand') return;
 
   const b = CATALOG[brandKey];
   const tpls = (b && b.templates) ? b.templates : {};
@@ -293,6 +308,53 @@ function fillTemplateOptions(){
     });
 
   if (prev && tpls[prev]) elTpl.value = prev;
+}
+
+function syncBrandModeUI() {
+  const otherBrand = isOtherBrandMode();
+  const nonMaint = isNonMaintenanceMode();
+
+  if (elTemplateWrap) elTemplateWrap.classList.toggle('hidden', nonMaint || otherBrand);
+  if (elHoursSetWrap) elHoursSetWrap.classList.toggle('hidden', nonMaint);
+  if (elModelWrap) elModelWrap.classList.toggle('hidden', !nonMaint && otherBrand);
+  if (elBrandManualWrap) elBrandManualWrap.classList.toggle('hidden', nonMaint || !otherBrand);
+  if (elModelManualWrap) elModelManualWrap.classList.toggle('hidden', nonMaint || !otherBrand);
+
+  if (elHoursSetLabel) elHoursSetLabel.classList.toggle('hidden', otherBrand);
+  if (elHoursSet) elHoursSet.classList.toggle('hidden', otherBrand);
+  if (elHoursManualLabel) elHoursManualLabel.classList.toggle('hidden', !otherBrand);
+
+  if (elModel) elModel.required = !otherBrand && !isNonMaintenanceMode();
+  if (elBrandManual) elBrandManual.required = otherBrand;
+  if (elModelManual) elModelManual.required = otherBrand;
+}
+
+function clearTemplateSelectionForOtherBrand() {
+  if (!isOtherBrandMode()) return;
+  if (elTpl) elTpl.value = '';
+  activeBrandKey = '';
+  activeTemplateKey = '';
+  if (elHoursSet) elHoursSet.disabled = false;
+}
+
+function syncModelForOtherBrand() {
+  if (!isOtherBrandMode() || !elModel || !elModelManual) return;
+  elModel.value = String(elModelManual.value || '').trim();
+}
+
+function syncBrandModeState() {
+  syncBrandModeUI();
+  if (!isOtherBrandMode()) return;
+  clearTemplateSelectionForOtherBrand();
+  if (elHoursSet) {
+    elHoursSet.value = 'MANUAL';
+    elHoursSet.disabled = true;
+  }
+  refreshHoursSetManualOption();
+  setManualHoursUI();
+  fillHours();
+  syncModelForOtherBrand();
+  syncModelFieldState(null);
 }
 
 let activeBrandKey = '';
@@ -380,6 +442,12 @@ function getTemplateModelCode(tpl) {
 
 function syncModelFieldState(tpl = null) {
   if (!elModel) return;
+  if (isOtherBrandMode()) {
+    elModel.readOnly = false;
+    elModel.classList.remove('acpdf-readonly');
+    elModel.removeAttribute('title');
+    return;
+  }
 
   const hasTemplate = !!(activeTemplateKey && tpl);
   if (!hasTemplate) {
@@ -400,7 +468,7 @@ function syncModelFieldState(tpl = null) {
 }
 
 function updateTitle() {
-  const m = (elModel.value || '').trim();
+  const m = getEffectiveModelValue();
   const qt = (elQuoteType && elQuoteType.value) ? String(elQuoteType.value) : 'maintenance';
   if (qt === 'other') {
     const detail = (elQuoteDetail && elQuoteDetail.value) ? String(elQuoteDetail.value).trim() : '';
@@ -432,6 +500,17 @@ function normalizeQuoteTypeValue(v) {
   const qt = String(v || '').trim();
   if (qt === 'insumos') return 'other';
   return qt || 'maintenance';
+}
+
+function isOtherBrandMode() {
+  return !isNonMaintenanceMode() && String(elBrand?.value || '').trim() === 'other_brand';
+}
+
+function getEffectiveModelValue() {
+  if (isOtherBrandMode()) {
+    return String(elModelManual?.value || '').trim();
+  }
+  return String(elModel?.value || '').trim();
 }
 
 function updateHoursSetOptionLabels() {
@@ -561,6 +640,7 @@ function setQuoteTypeUI(opts = {}) {
     refreshHoursSetManualOption();
     fillHours();
   }
+  syncBrandModeState();
   if (shouldAutosave) {
     triggerAutosave();
   }
@@ -596,6 +676,7 @@ function setManualHoursUI() {
   const isManual = (String(elHoursSet.value || '') === 'MANUAL');
   if (!elHoursManual || !elHoursManualHelp) return;
 
+  if (elHoursManualLabel) elHoursManualLabel.classList.toggle('hidden', !isManual);
   elHoursManual.classList.toggle('hidden', !isManual);
   elHoursManualHelp.classList.toggle('hidden', !isManual);
 
@@ -767,6 +848,12 @@ function applyTemplate(brandKey, tplKey, opts = {}) {
   const bKey = String(brandKey || '').trim();
   const tKey = String(tplKey || '').trim();
   const shouldAutosave = opts.autosave !== false;
+  if (bKey === 'other_brand') {
+    activeBrandKey = '';
+    activeTemplateKey = '';
+    syncModelFieldState(null);
+    return;
+  }
 
   activeBrandKey = bKey;
   activeTemplateKey = tKey;
@@ -901,6 +988,11 @@ function applyPrefill(d) {
   setField('phone', d.phone);
   setField('email', d.email);
   setField('model', d.model);
+  setField('brand_manual', d.brand_manual);
+  setField('model_manual', d.model_manual);
+  if (String(d.brand_key || '') === 'other_brand' && !String(d.model_manual || '').trim() && String(d.model || '').trim()) {
+    setField('model_manual', d.model);
+  }
   setField('location', d.location);
   setField('quote_type', normalizeQuoteTypeValue(d.quote_type));
   setField('quote_detail', d.quote_detail);
@@ -936,8 +1028,9 @@ function applyPrefill(d) {
 
   // Apply template if provided
   if (d.brand_key) elBrand.value = String(d.brand_key);
+  syncBrandModeState();
   fillTemplateOptions();
-  if (d.template_key) {
+  if (d.template_key && !isOtherBrandMode()) {
     elTpl.value = String(d.template_key);
     if (d.maint_hours) {
       // applyTemplate will ensure hour belongs to the template hours; set desired hour after fillHours()
@@ -1021,8 +1114,7 @@ function validateForm() {
 
   // Required fields
   const requiredFields = [
-    { name: 'client', label: 'Cliente' },
-    { name: 'model', label: 'Modelo' }
+    { name: 'client', label: 'Cliente' }
   ];
 
   requiredFields.forEach(field => {
@@ -1033,6 +1125,28 @@ function validateForm() {
       valid = false;
     }
   });
+
+  if (isOtherBrandMode()) {
+    const brandManual = String(elBrandManual?.value || '').trim();
+    const modelManual = String(elModelManual?.value || '').trim();
+    if (!brandManual) {
+      setFieldError(elBrandManual, 'Marca es requerida');
+      errors.push('Marca es requerida');
+      valid = false;
+    }
+    if (!modelManual) {
+      setFieldError(elModelManual, 'Modelo es requerido');
+      errors.push('Modelo es requerido');
+      valid = false;
+    }
+  } else {
+    const modelVal = String(elModel?.value || '').trim();
+    if (!modelVal) {
+      setFieldError(elModel, 'Modelo es requerido');
+      errors.push('Modelo es requerido');
+      valid = false;
+    }
+  }
 
   const rutEl = document.querySelector('[name="rut"]');
   if (rutEl && rutEl.value.trim()) {
@@ -1136,6 +1250,8 @@ function getFormData() {
     phone: document.querySelector('[name="phone"]')?.value || '',
     email: document.querySelector('[name="email"]')?.value || '',
     model: document.querySelector('[name="model"]')?.value || '',
+    brand_manual: document.querySelector('[name="brand_manual"]')?.value || '',
+    model_manual: document.querySelector('[name="model_manual"]')?.value || '',
     quote_type: normalizeQuoteTypeValue(document.querySelector('[name="quote_type"]')?.value || 'maintenance'),
     quote_detail: document.querySelector('[name="quote_detail"]')?.value || '',
     repair_issue: document.querySelector('[name="repair_issue"]')?.value || '',
@@ -1272,6 +1388,7 @@ elBrand.addEventListener('change', () => {
   elHoursSet.disabled = false;
 
   fillTemplateOptions();
+  syncBrandModeState();
   if (elTpl) elTpl.value = '';
   fillHours();
   syncModelFieldState(null);
@@ -1300,6 +1417,20 @@ elModel.addEventListener('input', () => {
   updateTitle();
   triggerAutosave();
 });
+
+if (elBrandManual) {
+  elBrandManual.addEventListener('input', () => {
+    triggerAutosave();
+  });
+}
+
+if (elModelManual) {
+  elModelManual.addEventListener('input', () => {
+    syncModelForOtherBrand();
+    updateTitle();
+    triggerAutosave();
+  });
+}
 
 if (elTpl) {
   elTpl.addEventListener('change', () => {
@@ -1360,6 +1491,7 @@ fillTemplateOptions();
 fillHours();
 syncModelFieldState(null);
 setQuoteTypeUI({ autosave: false });
+syncBrandModeState();
 
 // Check for saved draft (only if no prefill)
 if (PREFILL) {
