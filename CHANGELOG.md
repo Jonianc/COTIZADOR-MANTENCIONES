@@ -1,3 +1,8 @@
+## 1.3.43 (2026-04-07)
+- Corrige visibilidad en `Marca = Otra marca`: vuelve a mostrarse el input manual de horas.
+- En `other_brand`, se oculta solo el selector `Set de horas` (label + select), manteniendo horas manuales visibles.
+- Mantiene el comportamiento sin pautas, sin sets predefinidos y sin precarga automática para `other_brand`.
+
 ## 1.3.42 (2026-04-07)
 - Corrige regresión UI: `syncBrandModeUI` ya no vuelve a mostrar bloques de Mantención en tipos `Reparación/Otro`.
 - En `Marca = Otra marca` (Mantención), oculta completamente `Set de horas` y fuerza modo de horas manual (`hours_set=MANUAL`).

@@ -26,6 +26,7 @@ const elBrand    = id('acpdf-brand');
 const elTpl      = id('acpdf-template');
 const elQuoteType = id('acpdf-quote-type');
 const elHoursSetWrap = id('acpdf-hours-set-wrap');
+const elHoursSetLabel = document.querySelector('label[for="acpdf-hours-set"]');
 const elHoursWrap = id('acpdf-hours-wrap');
 const elHoursManual = id('acpdf-hours-manual');
 const elHoursManualHelp = id('acpdf-hours-manual-help');
@@ -313,10 +314,13 @@ function syncBrandModeUI() {
   const nonMaint = isNonMaintenanceMode();
 
   if (elTemplateWrap) elTemplateWrap.classList.toggle('hidden', nonMaint || otherBrand);
-  if (elHoursSetWrap) elHoursSetWrap.classList.toggle('hidden', nonMaint || otherBrand);
+  if (elHoursSetWrap) elHoursSetWrap.classList.toggle('hidden', nonMaint);
   if (elModelWrap) elModelWrap.classList.toggle('hidden', !nonMaint && otherBrand);
   if (elBrandManualWrap) elBrandManualWrap.classList.toggle('hidden', nonMaint || !otherBrand);
   if (elModelManualWrap) elModelManualWrap.classList.toggle('hidden', nonMaint || !otherBrand);
+
+  if (elHoursSetLabel) elHoursSetLabel.classList.toggle('hidden', otherBrand);
+  if (elHoursSet) elHoursSet.classList.toggle('hidden', otherBrand);
 
   if (elModel) elModel.required = !otherBrand && !isNonMaintenanceMode();
   if (elBrandManual) elBrandManual.required = otherBrand;
