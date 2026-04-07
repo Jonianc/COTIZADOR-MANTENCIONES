@@ -252,7 +252,21 @@ $filter_args = array_filter([
                           <td><strong><?php echo esc_html($entry['quote_no'] ?? ''); ?></strong></td>
                           <td><?php echo esc_html($entry['payload']['internal_no'] ?? ''); ?></td>
                           <td><?php echo esc_html($entry['payload']['serial_no'] ?? ''); ?></td>
-                          <td><?php echo esc_html($entry['model'] ?? ''); ?></td>
+                          <td>
+                            <?php
+                              $entry_model = (string)($entry['model'] ?? '');
+                              $entry_qt = (string)($entry['payload']['quote_type'] ?? 'maintenance');
+                              if ($entry_qt === 'insumos') {
+                                  $entry_qt = 'other';
+                              }
+                              $entry_qd = trim((string)($entry['payload']['quote_detail'] ?? ''));
+                              $model_display = $entry_model;
+                              if ($entry_qt === 'other' && $entry_qd !== '') {
+                                  $model_display = trim($entry_model . ' - ' . $entry_qd);
+                              }
+                              echo esc_html($model_display);
+                            ?>
+                          </td>
                           <td><?php echo esc_html($entry['client'] ?? ''); ?></td>
                           <td class="t-center"><?php echo esc_html($entry['maint_hours'] ?? ''); ?></td>
                           <td><?php echo esc_html($entry['parts_type'] ?? ''); ?></td>

@@ -326,10 +326,17 @@ return $d.' de '.$mm.' del '.$y;
         $serial_no = preg_replace('/[^a-zA-Z0-9-]/', '', $get('serial_no', ''));
 
         $raw_quote_type = sanitize_key($get('quote_type', 'maintenance'));
-        if (!in_array($raw_quote_type, ['maintenance', 'repair', 'insumos'], true)) {
+        if ($raw_quote_type === 'insumos') {
+            $raw_quote_type = 'other';
+        }
+        if (!in_array($raw_quote_type, ['maintenance', 'repair', 'other'], true)) {
             $raw_quote_type = 'maintenance';
         }
         $quote_type = $raw_quote_type;
+        $quote_detail = trim(sanitize_text_field(wp_unslash($post['quote_detail'] ?? '')));
+        if ($quote_type !== 'other') {
+            $quote_detail = '';
+        }
 
         $repair_issue = trim(wp_kses_post(wp_unslash($post['repair_issue'] ?? '')));
         $repair_diagnosis = trim(wp_kses_post(wp_unslash($post['repair_diagnosis'] ?? '')));
@@ -388,6 +395,7 @@ return $d.' de '.$mm.' del '.$y;
             'location' => $get('location', ''),
             'maint_hours' => $maint_hours,
             'quote_type' => $quote_type,
+            'quote_detail' => $quote_detail,
             'parts_type' => ($get('parts_type', 'ORIGINALES') === 'ALTERNATIVOS') ? 'ALTERNATIVOS' : 'ORIGINALES',
             'observations' => trim(wp_kses_post(wp_unslash($post['observations'] ?? ''))),
             'iva_percent' => floatval($settings['default_iva_percent']),
@@ -616,10 +624,13 @@ return $d.' de '.$mm.' del '.$y;
     private static function build_pdf_bytes($payload, $quote_no, $show_codes) {
         $settings = ACPDF_Settings::get();
         $qt = ($payload['quote_type'] ?? 'maintenance');
+        if ($qt === 'insumos') {
+            $qt = 'other';
+        }
         if ($qt === 'repair') {
             $title = trim(($payload['model'] ? $payload['model'].' ' : '') . 'REPARACION');
-        } elseif ($qt === 'insumos') {
-            $title = trim(($payload['model'] ? $payload['model'].' ' : '') . 'INSUMOS');
+        } elseif ($qt === 'other') {
+            $title = trim(($payload['model'] ? $payload['model'].' ' : '') . ($payload['quote_detail'] ?? ''));
         } else {
             $title = trim(($payload['model'] ? $payload['model'].' ' : '') . 'MANTENCION ' . $payload['maint_hours'] . ' HORAS');
         }

@@ -24,6 +24,7 @@ const elHoursWrap = id('acpdf-hours-wrap');
 const elHoursManual = id('acpdf-hours-manual');
 const elHoursManualHelp = id('acpdf-hours-manual-help');
 const repairWrap = id('acpdf-repair-wrap');
+const elQuoteDetail = id('acpdf-quote-detail');
 
 const tbody      = document.querySelector('#acpdf-items tbody');
 
@@ -401,12 +402,13 @@ function syncModelFieldState(tpl = null) {
 function updateTitle() {
   const m = (elModel.value || '').trim();
   const qt = (elQuoteType && elQuoteType.value) ? String(elQuoteType.value) : 'maintenance';
-  if (qt === 'repair') {
-    elTitle.value = ((m ? (m + ' ') : '') + 'REPARACION').trim();
+  if (qt === 'other') {
+    const detail = (elQuoteDetail && elQuoteDetail.value) ? String(elQuoteDetail.value).trim() : '';
+    elTitle.value = ((m ? (m + ' ') : '') + detail).trim();
     return;
   }
-  if (qt === 'insumos') {
-    elTitle.value = ((m ? (m + ' ') : '') + 'INSUMOS').trim();
+  if (qt === 'repair') {
+    elTitle.value = ((m ? (m + ' ') : '') + 'REPARACION').trim();
     return;
   }
   const h = (elHours.value || '').trim();
@@ -418,12 +420,18 @@ function isRepairMode() {
   return (elQuoteType && String(elQuoteType.value || '') === 'repair');
 }
 
-function isInsumosMode() {
-  return (elQuoteType && String(elQuoteType.value || '') === 'insumos');
+function isOtherMode() {
+  return (elQuoteType && String(elQuoteType.value || '') === 'other');
 }
 
 function isNonMaintenanceMode() {
-  return isRepairMode() || isInsumosMode();
+  return isRepairMode() || isOtherMode();
+}
+
+function normalizeQuoteTypeValue(v) {
+  const qt = String(v || '').trim();
+  if (qt === 'insumos') return 'other';
+  return qt || 'maintenance';
 }
 
 function updateHoursSetOptionLabels() {
@@ -490,7 +498,14 @@ function syncHoursSetOptions() {
 }
 
 function setQuoteTypeUI(opts = {}) {
+  if (elQuoteType) {
+    const normalizedType = normalizeQuoteTypeValue(elQuoteType.value);
+    if (normalizedType !== elQuoteType.value) {
+      elQuoteType.value = normalizedType;
+    }
+  }
   const repair = isRepairMode();
+  const other = isOtherMode();
   const nonMaint = isNonMaintenanceMode();
   const shouldAutosave = !!opts.autosave;
 
@@ -498,6 +513,7 @@ function setQuoteTypeUI(opts = {}) {
   $$('.acpdf-only-nonmaint').forEach(el => el.classList.toggle('hidden', !nonMaint));
   $$('.acpdf-only-repair').forEach(el => el.classList.toggle('hidden', !repair));
   $$('.acpdf-only-repair-cost').forEach(el => el.classList.toggle('hidden', !repair));
+  $$('.acpdf-only-other').forEach(el => el.classList.toggle('hidden', !other));
   $$('.acpdf-only-maint').forEach(el => el.classList.toggle('hidden', nonMaint));
 
   // Limpiar campos exclusivos de reparación cuando el tipo no sea Reparación
@@ -514,6 +530,10 @@ function setQuoteTypeUI(opts = {}) {
     if (laborRate) laborRate.value = '';
     if (travelAmount) travelAmount.value = '';
     if (externalAmount) externalAmount.value = '';
+  }
+
+  if (!other && elQuoteDetail) {
+    elQuoteDetail.value = '';
   }
 
   if (nonMaint) {
@@ -882,7 +902,8 @@ function applyPrefill(d) {
   setField('email', d.email);
   setField('model', d.model);
   setField('location', d.location);
-  setField('quote_type', d.quote_type);
+  setField('quote_type', normalizeQuoteTypeValue(d.quote_type));
+  setField('quote_detail', d.quote_detail);
   setQuoteTypeUI({ autosave: false });
   setField('brand_key', d.brand_key);
   setField('template_key', d.template_key);
@@ -890,7 +911,7 @@ function applyPrefill(d) {
   setField('hours_manual', d.hours_manual);
   setField('maint_hours', d.maint_hours);
   setField('parts_type', d.parts_type);
-  const prefillQuoteType = String(d.quote_type || 'maintenance');
+  const prefillQuoteType = normalizeQuoteTypeValue(d.quote_type);
   if (prefillQuoteType === 'repair') {
     setField('repair_issue', d.repair_issue);
     setField('repair_diagnosis', d.repair_diagnosis);
@@ -1042,6 +1063,16 @@ function validateForm() {
     }
   }
 
+  if (isOtherMode()) {
+    const quoteDetailEl = document.querySelector('[name="quote_detail"]');
+    const quoteDetail = quoteDetailEl ? quoteDetailEl.value.trim() : '';
+    if (!quoteDetail) {
+      setFieldError(quoteDetailEl, 'Detalle de cotización es requerido');
+      errors.push('Detalle de cotización es requerido');
+      valid = false;
+    }
+  }
+
   if (isRepairMode()) {
     const laborHours = parseNum(document.querySelector('[name="labor_hours"]')?.value);
     const laborRate = parseNum(document.querySelector('[name="labor_rate"]')?.value);
@@ -1105,7 +1136,8 @@ function getFormData() {
     phone: document.querySelector('[name="phone"]')?.value || '',
     email: document.querySelector('[name="email"]')?.value || '',
     model: document.querySelector('[name="model"]')?.value || '',
-    quote_type: document.querySelector('[name="quote_type"]')?.value || 'maintenance',
+    quote_type: normalizeQuoteTypeValue(document.querySelector('[name="quote_type"]')?.value || 'maintenance'),
+    quote_detail: document.querySelector('[name="quote_detail"]')?.value || '',
     repair_issue: document.querySelector('[name="repair_issue"]')?.value || '',
     repair_diagnosis: document.querySelector('[name="repair_diagnosis"]')?.value || '',
     labor_hours: document.querySelector('[name="labor_hours"]')?.value || '',
@@ -1252,6 +1284,13 @@ elBrand.addEventListener('change', () => {
 if (elQuoteType) {
   elQuoteType.addEventListener('change', () => {
     setQuoteTypeUI({ autosave: true });
+  });
+}
+
+if (elQuoteDetail) {
+  elQuoteDetail.addEventListener('input', () => {
+    updateTitle();
+    triggerAutosave();
   });
 }
 

@@ -317,6 +317,7 @@ class ACPDF_Routes {
             'N° Interno',
             'Serie',
             'Modelo',
+            'Detalle cotización',
             'Cliente',
             'RUT',
             'Teléfono',
@@ -339,6 +340,7 @@ class ACPDF_Routes {
                 $payload['internal_no'] ?? '',
                 $payload['serial_no'] ?? '',
                 $entry['model'] ?? '',
+                ($payload['quote_type'] ?? '') === 'other' || ($payload['quote_type'] ?? '') === 'insumos' ? ($payload['quote_detail'] ?? '') : '',
                 $entry['client'] ?? '',
                 $payload['rut'] ?? '',
                 $payload['phone'] ?? '',
@@ -378,6 +380,10 @@ class ACPDF_Routes {
         }
 
         $payload = ACPDF_PDF::sanitize_payload($_POST);
+        if (($payload['quote_type'] ?? '') === 'other' && trim((string)($payload['quote_detail'] ?? '')) === '') {
+            status_header(400);
+            exit('Detalle de cotización es obligatorio para tipo Otro.');
+        }
         ACPDF_PDF::output_pdf($payload);
     }
 
@@ -392,6 +398,10 @@ class ACPDF_Routes {
         }
 
         $payload = ACPDF_PDF::sanitize_payload($_POST);
+        if (($payload['quote_type'] ?? '') === 'other' && trim((string)($payload['quote_detail'] ?? '')) === '') {
+            status_header(400);
+            exit('Detalle de cotización es obligatorio para tipo Otro.');
+        }
         ACPDF_PDF::output_preview($payload);
     }
 }

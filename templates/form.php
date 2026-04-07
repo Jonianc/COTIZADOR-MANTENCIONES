@@ -142,9 +142,14 @@ include ACPDF_DIR . 'templates/partials/head.php';
                     <select name="quote_type" id="acpdf-quote-type">
                       <option value="maintenance">Mantención</option>
                       <option value="repair">Reparación</option>
-                      <option value="insumos">Insumos</option>
+                      <option value="other">Otro</option>
                     </select>
-                    <div class="muted small">Reparación e Insumos son sin precarga (sin pauta).</div>
+                    <div class="muted small">Reparación y Otro son sin precarga (sin pauta).</div>
+                  </div>
+                  <div class="col-3 acpdf-only-other hidden" id="acpdf-quote-detail-wrap">
+                    <label for="acpdf-quote-detail">Detalle de cotización <span class="required">*</span></label>
+                    <input type="text" name="quote_detail" id="acpdf-quote-detail" placeholder="Ej: INSUMOS AGRÍCOLAS" />
+                    <div class="muted small">Obligatorio solo para tipo Otro.</div>
                   </div>
 
 
@@ -176,7 +181,7 @@ include ACPDF_DIR . 'templates/partials/head.php';
                   <!-- Reparación (sin precarga) -->
                   <div class="col-12 acpdf-only-nonmaint hidden" id="acpdf-repair-wrap">
                     <div class="divider"></div>
-                    <div class="muted small" style="margin-bottom:8px">Modo reparación/insumos: sin pauta y sin set de horas.</div>
+                    <div class="muted small" style="margin-bottom:8px">Modo reparación/otro: sin pauta y sin set de horas.</div>
                   </div>
 
                   <div class="col-6 acpdf-only-repair hidden">

@@ -1,3 +1,10 @@
+## 1.3.40 (2026-04-07)
+- Reemplaza tipo de cotización `Insumos` por `Otro` en formulario; nuevas cotizaciones usan `quote_type=other`.
+- Agrega campo obligatorio `Detalle de cotización` visible solo en tipo `Otro`; se valida en frontend y backend antes de generar PDF/vista previa.
+- Título del PDF en tipo `Otro` ahora usa el texto de `Detalle de cotización` (mantiene Mantención/Reparación sin cambios).
+- Compatibilidad backward: entradas históricas con `quote_type=insumos` se normalizan a comportamiento `other`.
+- Gestor/Listados: muestra `Detalle de cotización` para tipo `Otro` en la columna Modelo y lo incorpora en exportación CSV.
+
 ## 1.3.39 (2026-03-03)
 - Corrige arrastre de datos de Reparación al cambiar a Mantención/Insumos: el frontend ahora limpia campos de reparación para cualquier tipo distinto de Reparación.
 - Endurece sanitización backend: cuando `quote_type` no es Reparación, también fuerza a cero `labor_hours`, `labor_rate`, `travel_amount` y `external_amount`.
