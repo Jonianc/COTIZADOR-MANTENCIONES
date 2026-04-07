@@ -27,6 +27,7 @@ const elTpl      = id('acpdf-template');
 const elQuoteType = id('acpdf-quote-type');
 const elHoursSetWrap = id('acpdf-hours-set-wrap');
 const elHoursSetLabel = document.querySelector('label[for="acpdf-hours-set"]');
+const elHoursManualLabel = id('acpdf-hours-manual-label');
 const elHoursWrap = id('acpdf-hours-wrap');
 const elHoursManual = id('acpdf-hours-manual');
 const elHoursManualHelp = id('acpdf-hours-manual-help');
@@ -321,6 +322,7 @@ function syncBrandModeUI() {
 
   if (elHoursSetLabel) elHoursSetLabel.classList.toggle('hidden', otherBrand);
   if (elHoursSet) elHoursSet.classList.toggle('hidden', otherBrand);
+  if (elHoursManualLabel) elHoursManualLabel.classList.toggle('hidden', !otherBrand);
 
   if (elModel) elModel.required = !otherBrand && !isNonMaintenanceMode();
   if (elBrandManual) elBrandManual.required = otherBrand;
@@ -674,6 +676,7 @@ function setManualHoursUI() {
   const isManual = (String(elHoursSet.value || '') === 'MANUAL');
   if (!elHoursManual || !elHoursManualHelp) return;
 
+  if (elHoursManualLabel) elHoursManualLabel.classList.toggle('hidden', !isManual);
   elHoursManual.classList.toggle('hidden', !isManual);
   elHoursManualHelp.classList.toggle('hidden', !isManual);
 

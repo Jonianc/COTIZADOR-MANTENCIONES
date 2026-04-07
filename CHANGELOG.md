@@ -1,3 +1,7 @@
+## 1.3.44 (2026-04-07)
+- En `Marca = Otra marca`, agrega label visible para el input manual de horas (`Tipo mantención (horas)`).
+- Mantiene oculto el selector `Set de horas` y conserva el flujo manual sin pautas/precarga para `other_brand`.
+
 ## 1.3.43 (2026-04-07)
 - Corrige visibilidad en `Marca = Otra marca`: vuelve a mostrarse el input manual de horas.
 - En `other_brand`, se oculta solo el selector `Set de horas` (label + select), manteniendo horas manuales visibles.

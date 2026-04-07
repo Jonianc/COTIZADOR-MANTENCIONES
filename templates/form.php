@@ -168,6 +168,7 @@ include ACPDF_DIR . 'templates/partials/head.php';
                       <option value="A">A: 10–50–100 y luego cada 400 hasta 4800</option>
                       <option value="B">B: 10–50–100 y luego 500/1000/1500 hasta 5000</option>
                     </select>
+                    <label for="acpdf-hours-manual" id="acpdf-hours-manual-label" class="hidden">Tipo mantención (horas)</label>
                     <input type="text" name="hours_manual" id="acpdf-hours-manual" class="hidden" placeholder="Ej: 250" />
                     <div id="acpdf-hours-manual-help" class="muted small hidden">Ingresa un número de horas (ej: 250). Se usará como tipo de mantención.</div>
                   </div>
