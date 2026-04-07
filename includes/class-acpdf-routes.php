@@ -379,8 +379,15 @@ class ACPDF_Routes {
             exit('Forbidden');
         }
 
+        $raw_quote_type = sanitize_key(sanitize_text_field(wp_unslash($_POST['quote_type'] ?? '')));
+        $is_legacy_insumos = ($raw_quote_type === 'insumos');
+
         $payload = ACPDF_PDF::sanitize_payload($_POST);
-        if (($payload['quote_type'] ?? '') === 'other' && trim((string)($payload['quote_detail'] ?? '')) === '') {
+        if (
+            !$is_legacy_insumos &&
+            ($payload['quote_type'] ?? '') === 'other' &&
+            trim((string)($payload['quote_detail'] ?? '')) === ''
+        ) {
             status_header(400);
             exit('Detalle de cotización es obligatorio para tipo Otro.');
         }
@@ -397,8 +404,15 @@ class ACPDF_Routes {
             exit('Forbidden');
         }
 
+        $raw_quote_type = sanitize_key(sanitize_text_field(wp_unslash($_POST['quote_type'] ?? '')));
+        $is_legacy_insumos = ($raw_quote_type === 'insumos');
+
         $payload = ACPDF_PDF::sanitize_payload($_POST);
-        if (($payload['quote_type'] ?? '') === 'other' && trim((string)($payload['quote_detail'] ?? '')) === '') {
+        if (
+            !$is_legacy_insumos &&
+            ($payload['quote_type'] ?? '') === 'other' &&
+            trim((string)($payload['quote_detail'] ?? '')) === ''
+        ) {
             status_header(400);
             exit('Detalle de cotización es obligatorio para tipo Otro.');
         }
